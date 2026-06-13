@@ -4,7 +4,7 @@ A competency development platform: admin-registered users take an annual **Train
 
 This is a focused MVP of a much larger spec, built to showcase its heart: **role-based access with separation of duties** and the **TNA → gap → ILDP cycle engine**.
 
-**Live demo:** _(added after deploy)_ — demo logins are shown on the sign-in page.
+**Live demo:** https://training-analyzer-ten.vercel.app — demo logins are shown on the sign-in page.
 
 ## Roles (RBAC, enforced server-side)
 | Role | Adds, on top of being a learner |
