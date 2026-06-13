@@ -96,20 +96,19 @@ async function main() {
   // Lookup maps shared by the baseline build.
   const { data: levels } = await admin.from("proficiency_level").select("id, rank").eq("scale_id", SCALE_ID);
   const levelByRank = Object.fromEntries(levels.map((l) => [l.rank, l.id]));
-  const { data: items } = await admin.from("assessment_item").select("id, competency_id");
-  const itemByComp = Object.fromEntries(items.map((i) => [i.competency_id, i.id]));
+  const rankByLevel = Object.fromEntries(levels.map((l) => [l.id, l.rank]));
+  const { data: items } = await admin.from("assessment_item").select("id, competency_id, level_id").eq("response_type", "yes_no");
+  const itemsByComp = {};
+  for (const it of items ?? []) (itemsByComp[it.competency_id] ??= []).push({ id: it.id, levelRank: rankByLevel[it.level_id] });
 
   console.log("4) demo employee baseline (Year 1, validated, active ILDP)");
   const employeeId = idByEmail["employee@demo.test"];
   const supervisorId = idByEmail["supervisor@demo.test"];
   const hrId = idByEmail["hr@demo.test"];
 
-  const { data: existingCycle } = await admin.from("dev_cycle").select("id").eq("user_id", employeeId).maybeSingle();
-  if (existingCycle) {
-    console.log("   baseline already present — skipping");
-    console.log("Done.");
-    return;
-  }
+  // Reset so the baseline rebuilds cleanly under the current (deep) TNA model — the cascade
+  // clears the old tna_assessment / responses / competency_result / ildp / snapshots.
+  await admin.from("dev_cycle").delete().eq("user_id", employeeId);
 
   // The employee's locked targets (with competency code + target rank).
   const { data: targets } = await admin
@@ -155,7 +154,9 @@ async function main() {
     const status = assessed >= targetRank ? "closed" : "open";
     const priority = gap * t.weight * (t.is_critical ? 2 : 1);
 
-    await admin.from("tna_response").insert({ tna_assessment_id: tna.id, item_id: itemByComp[t.competency_id], raw_answer: String(assessed), derived_level_id: levelByRank[assessed] });
+    for (const it of itemsByComp[t.competency_id] ?? []) {
+      await admin.from("tna_response").insert({ tna_assessment_id: tna.id, item_id: it.id, raw_answer: it.levelRank <= assessed ? "yes" : "no", derived_level_id: null });
+    }
     await admin.from("competency_result").insert({ tna_assessment_id: tna.id, competency_id: t.competency_id, assessed_level_id: levelByRank[assessed], assessed_rank: assessed, score: assessed });
     await admin.from("ildp_item").insert({ ildp_id: ildp.id, competency_id: t.competency_id, baseline_level_id: levelByRank[assessed], target_level_id: levelByRank[targetRank], current_level_id: levelByRank[assessed], gap_size: gap, priority, gap_status: status, item_status: status === "closed" ? "completed" : "open" });
     await admin.from("progress_snapshot").insert({ dev_cycle_id: cycle.id, cycle_year: 1, competency_id: t.competency_id, assessed_rank: assessed, target_rank: targetRank, gap_size: gap, gap_status: status });

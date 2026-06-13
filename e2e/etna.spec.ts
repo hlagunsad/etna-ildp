@@ -58,18 +58,20 @@ test("happy path: employee takes TNA → supervisor validates → plan generated
   await expect(start).toBeVisible();
   await start.click();
 
-  // Rate every competency at "Basic" (guarantees gaps), then submit. Scope each click to
-  // its own row so re-renders don't shift a global nth() index.
-  const rows = page.getByTestId("tna-row");
-  await expect(rows.first()).toBeVisible();
-  const count = await rows.count();
+  // Check 2 of the 3 Basic items in each competency (≥ 50% threshold → assessed Basic),
+  // leaving Intermediate/Advanced unchecked → gaps vs the role's higher targets. Then submit.
+  const comps = page.getByTestId("tna-comp");
+  await expect(comps.first()).toBeVisible();
+  const count = await comps.count();
   for (let i = 0; i < count; i++) {
-    await rows.nth(i).getByRole("button", { name: "Basic" }).click();
+    const basics = comps.nth(i).locator('input[data-level="1"]');
+    await basics.nth(0).check();
+    await basics.nth(1).check();
   }
   const submit = page.getByRole("button", { name: "Submit for validation" });
   await expect(submit).toBeEnabled();
   await submit.click();
-  await expect(page.getByText(/awaiting your supervisor/i)).toBeVisible();
+  await expect(page.getByText(/awaiting validation/i)).toBeVisible();
   await signOut(page);
 
   // Supervisor validates → the gap engine generates the ILDP.

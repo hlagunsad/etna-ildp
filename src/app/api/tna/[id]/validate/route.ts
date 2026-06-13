@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getUserFromRequest } from "@/lib/auth";
 import { buildIldpItem } from "@/lib/gap";
+import { rollUpCompetency } from "@/lib/rollup";
 import type { Target } from "@/lib/types";
 
 const SCALE_ID = "00000000-0000-0000-0000-0000000000aa";
@@ -56,20 +57,30 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const rankById: Record<string, number> = {};
   for (const l of levels ?? []) { idByRank[l.rank] = l.id; rankById[l.id] = l.rank; }
 
-  // Submitted responses → assessed rank per competency.
-  const { data: items } = await db.from("assessment_item").select("id, competency_id");
+  // Yes/no "Can I…?" responses → assessed rank per competency, via the threshold roll-up.
+  const { data: items } = await db
+    .from("assessment_item")
+    .select("id, competency_id, level_id")
+    .eq("response_type", "yes_no");
   const compByItem: Record<string, string> = {};
-  for (const it of items ?? []) compByItem[it.id] = it.competency_id;
+  const levelRankByItem: Record<string, number> = {};
+  for (const it of items ?? []) {
+    compByItem[it.id] = it.competency_id;
+    if (it.level_id) levelRankByItem[it.id] = rankById[it.level_id];
+  }
   const { data: responses } = await db
     .from("tna_response")
-    .select("item_id, raw_answer, derived_level_id")
+    .select("item_id, raw_answer")
     .eq("tna_assessment_id", tnaId);
-  const assessedByComp: Record<string, number> = {};
+  const itemsByComp: Record<string, { levelRank: number; yes: boolean }[]> = {};
   for (const r of responses ?? []) {
     const comp = compByItem[r.item_id];
-    const rank = r.derived_level_id ? rankById[r.derived_level_id] : Number(r.raw_answer);
-    if (comp && Number.isFinite(rank)) assessedByComp[comp] = rank;
+    const levelRank = levelRankByItem[r.item_id];
+    if (!comp || !levelRank) continue;
+    (itemsByComp[comp] ??= []).push({ levelRank, yes: r.raw_answer === "yes" });
   }
+  const assessedByComp: Record<string, number> = {};
+  for (const comp of Object.keys(itemsByComp)) assessedByComp[comp] = rollUpCompetency(itemsByComp[comp]);
   for (const [comp, rank] of Object.entries(overrides)) assessedByComp[comp] = rank;
 
   // Previous year's assessed ranks (for the annual diff), if any.
