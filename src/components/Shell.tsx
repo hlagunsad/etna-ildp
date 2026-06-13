@@ -77,7 +77,7 @@ export default function Shell({ session, profile }: { session: Session; profile:
         {active === "training" && <MyTraining userId={userId} />}
         {active === "team" && <TeamPanel selfId={userId} role={role} />}
         {active === "org" && <OrgPanel />}
-        {active === "audit" && <AdminPanel canUsers={can(role, "manage_users")} />}
+        {active === "audit" && <AdminPanel canUsers={can(role, "manage_users")} role={role} />}
       </main>
     </div>
   );
