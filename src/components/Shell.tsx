@@ -14,6 +14,7 @@ import MyTraining from "./employee/MyTraining";
 import TeamPanel from "./TeamPanel";
 import OrgPanel from "./OrgPanel";
 import AdminPanel from "./AdminPanel";
+import LibraryPanel from "./library/LibraryPanel";
 
 type Tab = { key: string; label: string; icon: ReactNode };
 
@@ -52,6 +53,7 @@ const ic = {
   team: "M16 19v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM22 19v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11",
   org: "M4 21V5a2 2 0 0 1 2-2h6v18M12 9h6a2 2 0 0 1 2 2v10M8 7h0M8 11h0M8 15h0M16 13h0M16 17h0",
   audit: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4",
+  library: "M12 2 2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
 };
 
 function NavIcon({ d }: { d: string }) {
@@ -80,6 +82,7 @@ export default function Shell({ session, profile }: { session: Session; profile:
   ];
   if (can(role, "view_team")) tabs.push({ key: "team", label: "Team", icon: <NavIcon d={ic.team} /> });
   if (can(role, "view_org")) tabs.push({ key: "org", label: "Organization", icon: <NavIcon d={ic.org} /> });
+  if (can(role, "manage_library")) tabs.push({ key: "library", label: "Library", icon: <NavIcon d={ic.library} /> });
   if (can(role, "view_audit")) tabs.push({ key: "audit", label: "Admin", icon: <NavIcon d={ic.audit} /> });
 
   // ESC closes the drawer; focus the drawer when it opens; restore focus on close.
@@ -215,6 +218,7 @@ export default function Shell({ session, profile }: { session: Session; profile:
           {active === "training" && <MyTraining userId={userId} />}
           {active === "team" && <TeamPanel selfId={userId} role={role} />}
           {active === "org" && <OrgPanel />}
+          {active === "library" && <LibraryPanel />}
           {active === "audit" && <AdminPanel canUsers={can(role, "manage_users")} role={role} />}
         </div>
       </main>

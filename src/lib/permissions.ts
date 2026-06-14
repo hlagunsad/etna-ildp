@@ -9,7 +9,8 @@ export type Capability =
   | "view_org"
   | "manage_users"
   | "view_audit"
-  | "advance_year";
+  | "advance_year"
+  | "manage_library";
 
 /**
  * Whether a role has a capability. This mirrors the RLS policies and is the client-side
@@ -32,6 +33,7 @@ export function can(role: Role | null | undefined, cap: Capability): boolean {
     case "manage_users":
     case "view_audit":
     case "advance_year":
+    case "manage_library":
       return hrUp;
   }
 }

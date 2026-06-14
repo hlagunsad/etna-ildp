@@ -1,5 +1,16 @@
 import { getSupabase } from "./supabase";
-import type { Competency, DevCycle, Ildp, IldpItem, Level, Snapshot, Tna } from "./types";
+import type {
+  Competency,
+  CompetencyRow,
+  DevCycle,
+  Ildp,
+  IldpItem,
+  Level,
+  ProficiencyLevel,
+  Scale,
+  Snapshot,
+  Tna,
+} from "./types";
 
 export async function loadLookups(): Promise<{ competencies: Competency[]; levels: Level[] }> {
   const sb = getSupabase();
@@ -8,6 +19,28 @@ export async function loadLookups(): Promise<{ competencies: Competency[]; level
     sb.from("proficiency_level").select("id, rank, label"),
   ]);
   return { competencies: (comps ?? []) as Competency[], levels: (levels ?? []) as Level[] };
+}
+
+/**
+ * Sibling lookups for the content-library editors: the full scale/level/competency
+ * rows needed to populate cross-table dropdowns (e.g. a training's competency + level).
+ */
+export async function loadLibrary(): Promise<{
+  scales: Scale[];
+  levels: ProficiencyLevel[];
+  competencies: CompetencyRow[];
+}> {
+  const sb = getSupabase();
+  const [{ data: scales }, { data: levels }, { data: comps }] = await Promise.all([
+    sb.from("proficiency_scale").select("id, name").order("name"),
+    sb.from("proficiency_level").select("id, scale_id, rank, label").order("rank"),
+    sb.from("competency").select("id, code, name, description, category, comp_group, scale_id").order("code"),
+  ]);
+  return {
+    scales: (scales ?? []) as Scale[],
+    levels: (levels ?? []) as ProficiencyLevel[],
+    competencies: (comps ?? []) as CompetencyRow[],
+  };
 }
 
 export type Board = {

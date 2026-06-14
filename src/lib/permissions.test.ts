@@ -22,6 +22,12 @@ describe("can()", () => {
     expect(can("super_admin", "manage_users")).toBe(true);
     expect(can("super_admin", "advance_year")).toBe(true);
   });
+  it("only HR and super-admin can author the content library", () => {
+    expect(can("employee", "manage_library")).toBe(false);
+    expect(can("supervisor", "manage_library")).toBe(false);
+    expect(can("hr_admin", "manage_library")).toBe(true);
+    expect(can("super_admin", "manage_library")).toBe(true);
+  });
   it("a missing role can do nothing", () => {
     expect(can(null, "take_own_tna")).toBe(false);
     expect(can(undefined, "view_org")).toBe(false);

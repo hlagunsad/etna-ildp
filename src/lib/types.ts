@@ -106,3 +106,67 @@ export type Snapshot = {
   gap_size: number | null;
   gap_status: string | null;
 };
+
+// ---- Reference-content (library) row shapes — authored by HR/Super-Admin ----
+// Kept separate from the narrow engine types above (Competency/Level) on purpose:
+// widening those would ripple through loadLookups / the gap engine.
+
+export const COMP_GROUPS = ["core", "common", "technical"] as const;
+export const PROVIDERS = ["internal", "e-tesda", "coursebank", "external"] as const;
+export const MODES = ["online", "classroom", "on-the-job"] as const;
+
+export type Scale = { id: string; name: string };
+
+export type ProficiencyLevel = { id: string; scale_id: string; rank: number; label: string };
+
+export type CompetencyRow = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  comp_group: string | null;
+  scale_id: string;
+};
+
+export type LevelDescriptor = {
+  id: string;
+  competency_id: string;
+  level_id: string;
+  indicator_text: string;
+};
+
+export type JobRoleRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  department: string | null;
+};
+
+export type RoleTarget = {
+  id: string;
+  job_role_id: string;
+  competency_id: string;
+  target_level_id: string;
+  weight: number;
+  is_critical: boolean;
+};
+
+export type TrainingResource = {
+  id: string;
+  title: string;
+  provider: string | null;
+  url: string | null;
+  competency_id: string | null;
+  target_level_id: string | null;
+  mode: string | null;
+  cost: number | null;
+};
+
+export type AssessmentItem = {
+  id: string;
+  competency_id: string;
+  prompt_text: string;
+  response_type: string;
+  level_id: string | null;
+};

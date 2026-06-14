@@ -6,6 +6,7 @@ const CREDS: Record<string, [string, string]> = {
   employee: ["employee@demo.test", "lolom0panot333"],
   employee2: ["employee2@demo.test", "lolom0panot444"],
   supervisor: ["supervisor@demo.test", "lolom0panot222"],
+  hr: ["hr@demo.test", "lolom0panot111"],
 };
 
 async function signIn(page: Page, [email, password]: [string, string]) {
@@ -80,4 +81,32 @@ test("happy path: employee takes TNA → supervisor validates → plan generated
   await page.getByRole("button", { name: /Eddie Employee/ }).click();
   await page.getByRole("button", { name: "Validate TNA" }).click();
   await expect(page.getByText(/plan generated/i)).toBeVisible();
+});
+
+// Tidy up any rows a failed run might leave behind (the happy path deletes its own).
+test.afterAll(async () => {
+  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  await admin.from("training_resource").delete().like("title", "E2E Course%");
+});
+
+test("HR authors the content library: add then delete a training resource", async ({ page }) => {
+  await signIn(page, CREDS.hr);
+  await page.getByRole("button", { name: "Library" }).click();
+  await page.getByTestId("lib-tab-training").click();
+
+  const marker = `E2E Course ${Date.now()}`;
+  await page.getByLabel("Title").fill(marker);
+  await page.getByLabel("Provider").selectOption("internal");
+  await page.getByRole("button", { name: "Add training" }).click();
+
+  // The new row shows up in the catalog (client-side RLS write + audit succeeded).
+  const row = page.getByRole("row").filter({ hasText: marker });
+  await expect(row).toBeVisible();
+
+  // Two-click delete removes it.
+  await row.getByRole("button", { name: "Delete", exact: true }).click();
+  await row.getByRole("button", { name: "Confirm delete", exact: true }).click();
+  await expect(page.getByText(marker)).toHaveCount(0);
 });
