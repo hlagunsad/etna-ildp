@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getUserFromRequest } from "@/lib/auth";
+import { hasCapability } from "@/lib/serverPermissions";
 import { mapUserRow } from "@/lib/import";
 
 // Node runtime (needs `crypto`); allow headroom for the sequential auth-admin calls.
@@ -27,8 +28,8 @@ export async function POST(req: Request) {
 
   const { data: callerProfile } = await db.from("profiles").select("role").eq("id", caller.id).single();
   const callerRole = callerProfile?.role ?? null;
-  if (callerRole !== "super_admin" && callerRole !== "hr_admin") {
-    return NextResponse.json({ error: "Only HR / Super Admin can import accounts" }, { status: 403 });
+  if (!(await hasCapability(db, callerRole, "manage_users"))) {
+    return NextResponse.json({ error: "Not authorized to import accounts" }, { status: 403 });
   }
 
   const body = (await req.json().catch(() => ({}))) as { rows?: Record<string, string>[] };

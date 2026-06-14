@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase";
-import { can } from "@/lib/permissions";
+import { useCan } from "./PermissionsProvider";
 import { ROLE_LABEL } from "@/lib/labels";
 import type { Profile } from "@/lib/types";
 import { Button } from "./ui";
@@ -71,6 +71,7 @@ function NavIcon({ d }: { d: string }) {
 export default function Shell({ session, profile }: { session: Session; profile: Profile | null }) {
   const role = profile?.role ?? null;
   const userId = session.user.id;
+  const can = useCan();
   const [active, setActive] = useState("dashboard");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);

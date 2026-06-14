@@ -12,30 +12,79 @@ export type Capability =
   | "advance_year"
   | "manage_library";
 
+/** A role → granted-capabilities map. The DB `role_permission` table populates this at runtime. */
+export type PermissionMatrix = Record<string, Capability[]>;
+
+/** Display order + human labels for the permission-matrix editor. */
+export const CAPABILITIES: Capability[] = [
+  "take_own_tna",
+  "validate_tna",
+  "endorse_ildp",
+  "approve_ildp",
+  "advance_year",
+  "view_team",
+  "view_org",
+  "view_audit",
+  "manage_users",
+  "manage_library",
+];
+
+export const CAPABILITY_LABEL: Record<Capability, string> = {
+  take_own_tna: "Take own TNA",
+  validate_tna: "Validate TNA",
+  endorse_ildp: "Endorse ILDP",
+  approve_ildp: "Approve ILDP",
+  advance_year: "Advance cycle year",
+  view_team: "View team",
+  view_org: "View organization",
+  view_audit: "View audit log",
+  manage_users: "Manage users",
+  manage_library: "Manage content library",
+};
+
 /**
- * Whether a role has a capability. This mirrors the RLS policies and is the client-side
- * guard for showing/hiding controls — the database (RLS + the secret-key route checks)
- * is the real security boundary.
+ * The built-in defaults — the matrix the app ships with, and the fallback when the
+ * `role_permission` table is empty/unseeded. super_admin holds every capability and is
+ * also short-circuited in `canWith` so it can never be locked out.
  */
-export function can(role: Role | null | undefined, cap: Capability): boolean {
+export const DEFAULT_MATRIX: PermissionMatrix = {
+  super_admin: [...CAPABILITIES],
+  hr_admin: [...CAPABILITIES],
+  supervisor: ["take_own_tna", "validate_tna", "endorse_ildp", "view_team"],
+  employee: ["take_own_tna"],
+};
+
+/**
+ * Whether a role has a capability, against a given matrix. super_admin is always true
+ * (omnipotent, lockout-proof). This is the client-side guard for showing/hiding controls;
+ * the privileged secret-key routes re-check via `hasCapability`, and RLS is the DB backstop.
+ */
+export function canWith(matrix: PermissionMatrix, role: Role | null | undefined, cap: Capability): boolean {
   if (!role) return false;
-  const supervisorUp = role === "supervisor" || role === "hr_admin" || role === "super_admin";
-  const hrUp = role === "hr_admin" || role === "super_admin";
-  switch (cap) {
-    case "take_own_tna":
-      return true; // every authenticated user is a learner
-    case "validate_tna":
-    case "endorse_ildp":
-    case "view_team":
-      return supervisorUp;
-    case "approve_ildp":
-    case "view_org":
-    case "manage_users":
-    case "view_audit":
-    case "advance_year":
-    case "manage_library":
-      return hrUp;
+  if (role === "super_admin") return true;
+  return matrix[role]?.includes(cap) ?? false;
+}
+
+/** Convenience over the built-in defaults (keeps existing call sites + tests working). */
+export function can(role: Role | null | undefined, cap: Capability): boolean {
+  return canWith(DEFAULT_MATRIX, role, cap);
+}
+
+/**
+ * Merge `role_permission` rows over the defaults: a role with ≥1 row becomes authoritative
+ * (an omitted capability is revoked); a role with no rows keeps its defaults (so the app
+ * still works before the 0003 migration seeds the table).
+ */
+export function buildMatrix(rows: { role: string; capability: string }[]): PermissionMatrix {
+  const seeded = new Map<string, Capability[]>();
+  for (const r of rows) {
+    const list = seeded.get(r.role) ?? [];
+    list.push(r.capability as Capability);
+    seeded.set(r.role, list);
   }
+  const matrix: PermissionMatrix = { ...DEFAULT_MATRIX };
+  for (const [role, caps] of seeded) matrix[role] = caps;
+  return matrix;
 }
 
 /** Separation of duties: an approver/validator must be a different person than the owner. */

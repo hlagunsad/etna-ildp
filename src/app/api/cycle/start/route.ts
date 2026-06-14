@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getUserFromRequest } from "@/lib/auth";
+import { hasCapability } from "@/lib/serverPermissions";
 import type { Target } from "@/lib/types";
 
 // Begin the caller's 3-year cycle: lock their job-role targets into the cycle snapshot
@@ -9,6 +10,11 @@ export async function POST(req: Request) {
   const caller = await getUserFromRequest(req);
   if (!caller) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   const db = getSupabaseAdmin();
+
+  const { data: callerProfile } = await db.from("profiles").select("role").eq("id", caller.id).single();
+  if (!(await hasCapability(db, callerProfile?.role ?? null, "take_own_tna"))) {
+    return NextResponse.json({ error: "Not authorized to start a development cycle" }, { status: 403 });
+  }
 
   const { data: existing } = await db.from("dev_cycle").select("id").eq("user_id", caller.id).maybeSingle();
   if (existing) return NextResponse.json({ error: "You already have a development cycle" }, { status: 409 });

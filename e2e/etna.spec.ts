@@ -7,7 +7,16 @@ const CREDS: Record<string, [string, string]> = {
   employee2: ["employee2@demo.test", "lolom0panot444"],
   supervisor: ["supervisor@demo.test", "lolom0panot222"],
   hr: ["hr@demo.test", "lolom0panot111"],
+  super: ["super@demo.test", "lolom0panot000"],
 };
+
+// The seeded permission defaults (super_admin omitted — always-on in code).
+const DEFAULT_PERMS: [string, string][] = [
+  ["employee", "take_own_tna"],
+  ["supervisor", "take_own_tna"], ["supervisor", "validate_tna"], ["supervisor", "endorse_ildp"], ["supervisor", "view_team"],
+  ["hr_admin", "take_own_tna"], ["hr_admin", "validate_tna"], ["hr_admin", "endorse_ildp"], ["hr_admin", "view_team"],
+  ["hr_admin", "approve_ildp"], ["hr_admin", "view_org"], ["hr_admin", "manage_users"], ["hr_admin", "view_audit"], ["hr_admin", "advance_year"], ["hr_admin", "manage_library"],
+];
 
 async function signIn(page: Page, [email, password]: [string, string]) {
   await page.goto("/");
@@ -141,4 +150,34 @@ test("HR bulk-imports training resources from a pasted CSV", async ({ page }) =>
   // The imported rows show up in the Training catalog editor (titles cleaned by the afterAll above).
   await page.getByTestId("lib-tab-training").click();
   await expect(page.getByText(`E2E Course Import-${ts}-1`)).toBeVisible();
+});
+
+// Restore the permission matrix to its seeded default after the permissions test.
+test.afterAll(async () => {
+  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  try {
+    await admin.from("role_permission").delete().neq("role", "");
+    await admin.from("role_permission").insert(DEFAULT_PERMS.map(([role, capability]) => ({ role, capability })));
+  } catch {
+    /* table may not exist before 0003 is run — ignore */
+  }
+});
+
+test("super admin configures role permissions (grants Organization view to supervisors)", async ({ page }) => {
+  await signIn(page, CREDS.super);
+  await page.getByRole("button", { name: "Admin" }).click();
+
+  const cell = page.getByRole("checkbox", { name: "View organization for Supervisor" });
+  await expect(cell).toBeVisible();
+  await expect(cell).not.toBeChecked(); // default: supervisor lacks view_org
+  await cell.click(); // controlled checkbox persists async — assert the outcome, not check()
+  await expect(page.getByText(/Granted .* for Supervisor/)).toBeVisible();
+  await expect(cell).toBeChecked();
+  await signOut(page);
+
+  // Live enforcement: the supervisor now sees the Organization tab.
+  await signIn(page, CREDS.supervisor);
+  await expect(page.getByRole("button", { name: "Organization" })).toBeVisible();
 });

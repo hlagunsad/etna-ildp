@@ -6,6 +6,7 @@ import { getSupabase } from "@/lib/supabase";
 import type { Profile } from "@/lib/types";
 import SignIn from "./SignIn";
 import Shell from "./Shell";
+import { PermissionsProvider } from "./PermissionsProvider";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -42,5 +43,9 @@ export default function App() {
     return <div className="grid min-h-screen place-items-center text-sm text-slate-400">Loading…</div>;
   }
   if (!session) return <SignIn />;
-  return <Shell session={session} profile={profile} />;
+  return (
+    <PermissionsProvider>
+      <Shell session={session} profile={profile} />
+    </PermissionsProvider>
+  );
 }

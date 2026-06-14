@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { loadBoard, type Board } from "@/lib/queries";
 import { apiPost } from "@/lib/api";
-import { can } from "@/lib/permissions";
+import { useCan } from "./PermissionsProvider";
 import { Button, Card } from "./ui";
 import type { Profile, Role } from "@/lib/types";
 import EmployeeDashboard from "./employee/EmployeeDashboard";
@@ -23,6 +23,7 @@ export default function MemberDetail({
   selfId: string;
   onBack: () => void;
 }) {
+  const can = useCan();
   const [board, setBoard] = useState<Board | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getUserFromRequest } from "@/lib/auth";
+import { hasCapability } from "@/lib/serverPermissions";
 import { cycleOutcome } from "@/lib/cycle";
 import type { GapStatus, Target } from "@/lib/types";
 
@@ -14,8 +15,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const db = getSupabaseAdmin();
 
   const { data: profile } = await db.from("profiles").select("role").eq("id", caller.id).single();
-  const isAdmin = profile?.role === "hr_admin" || profile?.role === "super_admin";
-  if (!isAdmin) return NextResponse.json({ error: "Only HR / Super Admin can advance the cycle" }, { status: 403 });
+  if (!(await hasCapability(db, profile?.role ?? null, "advance_year"))) {
+    return NextResponse.json({ error: "Not authorized to advance the cycle" }, { status: 403 });
+  }
 
   const { data: cycle } = await db
     .from("dev_cycle")

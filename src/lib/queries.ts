@@ -1,4 +1,5 @@
 import { getSupabase } from "./supabase";
+import { buildMatrix, type PermissionMatrix } from "./permissions";
 import type {
   Competency,
   CompetencyRow,
@@ -110,4 +111,13 @@ export async function loadReportData(): Promise<ReportData> {
     competencies: lk.competencies,
     criticalByCompetency,
   };
+}
+
+/**
+ * The configurable permission matrix from `role_permission`, merged over the built-in
+ * defaults. If the table is missing/empty (pre-0003), this yields the defaults.
+ */
+export async function loadPermissionMatrix(): Promise<PermissionMatrix> {
+  const { data } = await getSupabase().from("role_permission").select("role, capability");
+  return buildMatrix((data ?? []) as { role: string; capability: string }[]);
 }

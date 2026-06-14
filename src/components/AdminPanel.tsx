@@ -7,6 +7,7 @@ import { ROLE_LABEL } from "@/lib/labels";
 import { Button, Card, Field, PageHeader, Pill, inputClass } from "./ui";
 import type { Profile, Role } from "@/lib/types";
 import CsvImport, { type RowResult } from "./import/CsvImport";
+import PermissionsMatrix from "./PermissionsMatrix";
 
 type Audit = { id: string; actor_email: string | null; action: string; entity_type: string; created_at: string };
 type JobRole = { id: string; name: string };
@@ -90,6 +91,8 @@ export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role
         )}
 
         {canUsers && <UsersImport onDone={load} />}
+
+        {role === "super_admin" && <PermissionsMatrix />}
 
         <Card className="p-5 sm:p-6">
           <h2 className="mb-3 text-sm font-semibold text-muted">User accounts ({profiles.length})</h2>

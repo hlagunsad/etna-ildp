@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getUserFromRequest } from "@/lib/auth";
+import { hasCapability } from "@/lib/serverPermissions";
 import { buildIldpItem } from "@/lib/gap";
 import { rollUpCompetency } from "@/lib/rollup";
 import type { Target } from "@/lib/types";
@@ -37,10 +38,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // ---- Authorization + separation of duties ----
   const { data: callerProfile } = await db.from("profiles").select("role").eq("id", caller.id).single();
   const { data: ownerProfile } = await db.from("profiles").select("manager_id").eq("id", ownerId).single();
-  const role = callerProfile?.role;
+  const role = callerProfile?.role ?? null;
   const isAdmin = role === "hr_admin" || role === "super_admin";
   const isManager = ownerProfile?.manager_id === caller.id;
-  if (!(isAdmin || isManager)) {
+  // Capability (configurable) gates WHETHER the role may validate; scope (admin/manager) gates WHOM.
+  if (!(await hasCapability(db, role, "validate_tna")) || !(isAdmin || isManager)) {
     return NextResponse.json({ error: "Not authorized to validate this TNA" }, { status: 403 });
   }
   if (ownerId === caller.id) {

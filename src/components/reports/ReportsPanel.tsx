@@ -10,12 +10,13 @@ import {
   readinessDistribution,
   toCsv,
 } from "@/lib/reporting";
-import { can } from "@/lib/permissions";
+import { useCan } from "../PermissionsProvider";
 import { GAP_LABEL, GAP_TONE, READINESS_LABEL, READINESS_TONE, TONE_CELL } from "@/lib/labels";
 import type { Role } from "@/lib/types";
 import { Button, Card, EmptyState, PageHeader, Pill, Spinner } from "../ui";
 
 export default function ReportsPanel({ role }: { role: Role | null }) {
+  const can = useCan();
   const [data, setData] = useState<ReportData | null>(null);
 
   const load = useCallback(async () => {
