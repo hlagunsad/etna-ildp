@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
   const body = (await req.json().catch(() => ({}))) as {
     full_name?: string; email?: string; password?: string; role?: string;
-    department?: string; job_role_id?: string; manager_id?: string;
+    org_unit_id?: string; job_role_id?: string; manager_id?: string;
   };
   const email = body.email?.trim();
   const password = body.password ?? "";
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     .update({
       full_name: body.full_name?.trim() || null,
       role,
-      department: body.department?.trim() || null,
+      org_unit_id: body.org_unit_id || null,
       job_role_id: body.job_role_id || null,
       manager_id: body.manager_id || null,
       status: "active",

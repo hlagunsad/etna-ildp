@@ -5,19 +5,20 @@ import { getSupabase } from "@/lib/supabase";
 import { apiPost } from "@/lib/api";
 import { ROLE_LABEL } from "@/lib/labels";
 import { Button, Card, Field, PageHeader, Pill, inputClass } from "./ui";
-import type { Profile, Role } from "@/lib/types";
+import type { OrgUnit, Profile, Role } from "@/lib/types";
 import CsvImport, { type RowResult } from "./import/CsvImport";
 import PermissionsMatrix from "./PermissionsMatrix";
 
 type Audit = { id: string; actor_email: string | null; action: string; entity_type: string; created_at: string };
 type JobRole = { id: string; name: string };
 
-const EMPTY_FORM = { full_name: "", email: "", password: "", role: "employee", department: "", job_role_id: "", manager_id: "" };
+const EMPTY_FORM = { full_name: "", email: "", password: "", role: "employee", org_unit_id: "", job_role_id: "", manager_id: "" };
 
 export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role: Role | null }) {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [audit, setAudit] = useState<Audit[]>([]);
   const [jobRoles, setJobRoles] = useState<JobRole[]>([]);
+  const [orgUnits, setOrgUnits] = useState<OrgUnit[]>([]);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -25,14 +26,16 @@ export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role
 
   const load = useCallback(async () => {
     const sb = getSupabase();
-    const [{ data: ps }, { data: a }, { data: jr }] = await Promise.all([
-      sb.from("profiles").select("id, full_name, email, role, manager_id, job_role_id, department, status"),
+    const [{ data: ps }, { data: a }, { data: jr }, { data: ou }] = await Promise.all([
+      sb.from("profiles").select("id, full_name, email, role, manager_id, job_role_id, org_unit_id, status"),
       sb.from("audit_log").select("id, actor_email, action, entity_type, created_at").order("created_at", { ascending: false }).limit(50),
       sb.from("job_role").select("id, name"),
+      sb.from("org_unit").select("id, name, description, parent_id").order("name"),
     ]);
     setProfiles((ps ?? []) as Profile[]);
     setAudit((a ?? []) as Audit[]);
     setJobRoles((jr ?? []) as JobRole[]);
+    setOrgUnits((ou ?? []) as OrgUnit[]);
   }, []);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch on mount; setState runs after the awaited load, not a synchronous cascade
@@ -42,6 +45,8 @@ export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role
     role === "super_admin"
       ? [["employee", "Employee"], ["supervisor", "Supervisor"], ["hr_admin", "HR / L&D Admin"], ["super_admin", "Super Admin"]]
       : [["employee", "Employee"], ["supervisor", "Supervisor"]];
+
+  const orgUnitName = (id: string | null) => orgUnits.find((u) => u.id === id)?.name ?? "—";
 
   function set<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -78,7 +83,7 @@ export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role
               <Field label="Email" htmlFor="cu-email"><input id="cu-email" type="email" autoComplete="off" required className={inputClass} value={form.email} onChange={(e) => set("email", e.target.value)} /></Field>
               <Field label="Temporary password" htmlFor="cu-pw" hint="Minimum 8 characters"><input id="cu-pw" required className={inputClass} value={form.password} onChange={(e) => set("password", e.target.value)} /></Field>
               <Field label="Role" htmlFor="cu-role"><select id="cu-role" className={inputClass} value={form.role} onChange={(e) => set("role", e.target.value)}>{roleOptions.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
-              <Field label="Department" htmlFor="cu-dept"><input id="cu-dept" className={inputClass} value={form.department} onChange={(e) => set("department", e.target.value)} /></Field>
+              <Field label="Org unit" htmlFor="cu-ou"><select id="cu-ou" className={inputClass} value={form.org_unit_id} onChange={(e) => set("org_unit_id", e.target.value)}><option value="">— Org unit —</option>{orgUnits.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</select></Field>
               <Field label="Job role" htmlFor="cu-jr"><select id="cu-jr" className={inputClass} value={form.job_role_id} onChange={(e) => set("job_role_id", e.target.value)}><option value="">— Job role —</option>{jobRoles.map((jr) => <option key={jr.id} value={jr.id}>{jr.name}</option>)}</select></Field>
               <Field label="Manager" htmlFor="cu-mgr"><select id="cu-mgr" className={inputClass} value={form.manager_id} onChange={(e) => set("manager_id", e.target.value)}><option value="">— Manager —</option>{profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name ?? p.email}</option>)}</select></Field>
               <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
@@ -103,7 +108,7 @@ export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role
                   <th scope="col" className="pb-2 font-medium">Name</th>
                   <th scope="col" className="pb-2 font-medium">Email</th>
                   <th scope="col" className="pb-2 font-medium">Role</th>
-                  <th scope="col" className="pb-2 font-medium">Dept</th>
+                  <th scope="col" className="pb-2 font-medium">Org unit</th>
                 </tr>
               </thead>
               <tbody>
@@ -112,7 +117,7 @@ export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role
                     <td className="py-2.5 font-medium text-ink">{p.full_name ?? "—"}</td>
                     <td className="py-2.5 text-muted">{p.email}</td>
                     <td className="py-2.5"><Pill tone="neutral">{ROLE_LABEL[p.role]}</Pill></td>
-                    <td className="py-2.5 text-muted">{p.department}</td>
+                    <td className="py-2.5 text-muted">{orgUnitName(p.org_unit_id)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -164,8 +169,8 @@ function UsersImport({ onDone }: { onDone: () => Promise<void> }) {
     <CsvImport
       testId="users-import"
       title="Import users (CSV)"
-      hint="Columns: full_name, email (required), role, department, job_role, manager_email, password. Leave password blank to auto-generate a temporary one (shown once in the results). A manager listed in the same file is linked after creation; existing emails are skipped."
-      templateHeaders={["full_name", "email", "role", "department", "job_role", "manager_email", "password"]}
+      hint="Columns: full_name, email (required), role, org_unit, job_role, manager_email, password. Leave password blank to auto-generate a temporary one (shown once in the results). A manager listed in the same file is linked after creation; existing emails are skipped."
+      templateHeaders={["full_name", "email", "role", "org_unit", "job_role", "manager_email", "password"]}
       sampleRow={["Jordan Cruz", "jordan.cruz@example.com", "employee", "IT", "", "supervisor@demo.test", ""]}
       onImport={importUsers}
     />

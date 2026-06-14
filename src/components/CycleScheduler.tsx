@@ -7,7 +7,8 @@ import { eligibleForCycle, isTnaOnTime } from "@/lib/cycle";
 import { Button, Card, Field, PageHeader, Pill, Spinner, inputClass } from "./ui";
 import { EditorStatus } from "./library/EditorShell";
 
-type Profile = { id: string; full_name: string | null; department: string | null; job_role_id: string | null };
+type Profile = { id: string; full_name: string | null; org_unit_id: string | null; job_role_id: string | null };
+type OrgUnitOpt = { id: string; name: string };
 type Cycle = { id: string; user_id: string; current_year: number; status: string };
 type Tna = { dev_cycle_id: string; cycle_year: number; status: string; due_date: string | null };
 type ActionResult = { label: string; status: string; message?: string };
@@ -22,10 +23,11 @@ const STATUS_TONE: Record<string, "success" | "warn" | "danger" | "neutral"> = {
 
 export default function CycleScheduler() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [orgUnits, setOrgUnits] = useState<OrgUnitOpt[]>([]);
   const [cycles, setCycles] = useState<Cycle[]>([]);
   const [tnas, setTnas] = useState<Tna[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dept, setDept] = useState("");
+  const [orgUnitId, setOrgUnitId] = useState("");
   const [openDue, setOpenDue] = useState("");
   const [advanceDue, setAdvanceDue] = useState("");
   const [advanceArmed, setAdvanceArmed] = useState(false);
@@ -36,12 +38,14 @@ export default function CycleScheduler() {
 
   const load = useCallback(async () => {
     const sb = getSupabase();
-    const [{ data: ps }, { data: cy }, { data: tn }] = await Promise.all([
-      sb.from("profiles").select("id, full_name, department, job_role_id"),
+    const [{ data: ps }, { data: ou }, { data: cy }, { data: tn }] = await Promise.all([
+      sb.from("profiles").select("id, full_name, org_unit_id, job_role_id"),
+      sb.from("org_unit").select("id, name").order("name"),
       sb.from("dev_cycle").select("id, user_id, current_year, status"),
       sb.from("tna_assessment").select("dev_cycle_id, cycle_year, status, due_date"),
     ]);
     setProfiles((ps ?? []) as Profile[]);
+    setOrgUnits((ou ?? []) as OrgUnitOpt[]);
     setCycles((cy ?? []) as Cycle[]);
     setTnas((tn ?? []) as Tna[]);
     setLoading(false);
@@ -64,7 +68,6 @@ export default function CycleScheduler() {
   }
   const byStatus = (s: string) => cycles.filter((c) => c.status === s).length;
   const activeByYear = (y: number) => cycles.filter((c) => c.current_year === y && c.status === "active").length;
-  const departments = [...new Set(profiles.map((p) => p.department).filter((d): d is string => !!d))].sort();
 
   async function runOpen() {
     setBusy("open");
@@ -72,7 +75,7 @@ export default function CycleScheduler() {
     setError(null);
     setResults(null);
     try {
-      const r = await apiPost("/api/cycles/bulk-open", { department: dept || undefined, dueDate: openDue || undefined });
+      const r = await apiPost("/api/cycles/bulk-open", { orgUnitId: orgUnitId || undefined, dueDate: openDue || undefined });
       const res = (r.results as ActionResult[]) ?? [];
       setResults(res);
       if (res.length === 0) setMsg((r.message as string) ?? "Nothing to open.");
@@ -128,10 +131,10 @@ export default function CycleScheduler() {
           <h2 className="text-sm font-semibold text-ink">Open cycles</h2>
           <p className="mb-4 mt-1 text-xs text-muted">Starts a baseline cycle + TNA for everyone with a job role and no cycle yet — {eligible.length} eligible now.</p>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Department" htmlFor="cs-dept" hint="Optional — limit to one department.">
-              <select id="cs-dept" className={inputClass} value={dept} onChange={(e) => setDept(e.target.value)}>
-                <option value="">All departments</option>
-                {departments.map((d) => <option key={d} value={d}>{d}</option>)}
+            <Field label="Org unit" htmlFor="cs-ou" hint="Optional — limit to one org unit.">
+              <select id="cs-ou" className={inputClass} value={orgUnitId} onChange={(e) => setOrgUnitId(e.target.value)}>
+                <option value="">All org units</option>
+                {orgUnits.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </Field>
             <Field label="TNA due date" htmlFor="cs-open-due" hint="Optional — the submission deadline.">

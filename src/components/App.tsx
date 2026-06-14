@@ -7,6 +7,7 @@ import type { Profile } from "@/lib/types";
 import SignIn from "./SignIn";
 import Shell from "./Shell";
 import { PermissionsProvider } from "./PermissionsProvider";
+import { NotificationsProvider } from "./NotificationsProvider";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -45,7 +46,9 @@ export default function App() {
   if (!session) return <SignIn />;
   return (
     <PermissionsProvider>
-      <Shell session={session} profile={profile} />
+      <NotificationsProvider>
+        <Shell session={session} profile={profile} />
+      </NotificationsProvider>
     </PermissionsProvider>
   );
 }

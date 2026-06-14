@@ -17,6 +17,7 @@ import AdminPanel from "./AdminPanel";
 import LibraryPanel from "./library/LibraryPanel";
 import ReportsPanel from "./reports/ReportsPanel";
 import CycleScheduler from "./CycleScheduler";
+import NotificationBell from "./NotificationBell";
 
 type Tab = { key: string; label: string; icon: ReactNode };
 
@@ -156,7 +157,10 @@ export default function Shell({ session, profile }: { session: Session; profile:
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line bg-surface/70 backdrop-blur lg:flex">
         <div className="px-5 pb-3 pt-5"><Wordmark onClick={() => go("dashboard")} /></div>
-        <div className="px-5 pb-4"><RoleBadge role={role} /></div>
+        <div className="flex items-center justify-between gap-2 px-5 pb-4">
+          <RoleBadge role={role} />
+          <NotificationBell onNavigate={go} />
+        </div>
         <div className="flex-1 overflow-y-auto px-3">
           {renderNav("desk-nav")}
         </div>
@@ -183,7 +187,10 @@ export default function Shell({ session, profile }: { session: Session; profile:
           </svg>
         </button>
         <Wordmark onClick={() => go("dashboard")} />
-        <Button variant="ghost" size="sm" onClick={() => getSupabase().auth.signOut()}>Sign out</Button>
+        <div className="flex items-center gap-0.5">
+          <NotificationBell onNavigate={go} />
+          <Button variant="ghost" size="sm" onClick={() => getSupabase().auth.signOut()}>Sign out</Button>
+        </div>
       </header>
 
       {/* Mobile drawer */}

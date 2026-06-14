@@ -5,6 +5,7 @@ import { PageHeader } from "../ui";
 import CompetencyEditor from "./CompetencyEditor";
 import ItemEditor from "./ItemEditor";
 import JobRoleEditor from "./JobRoleEditor";
+import OrgUnitEditor from "./OrgUnitEditor";
 import ScaleEditor from "./ScaleEditor";
 import TrainingEditor from "./TrainingEditor";
 import TrainingImport from "./TrainingImport";
@@ -15,6 +16,7 @@ const TABS = [
   { key: "roles", label: "Job roles & targets" },
   { key: "training", label: "Training catalog" },
   { key: "items", label: "Assessment items" },
+  { key: "org_units", label: "Org units" },
   { key: "import", label: "Import" },
 ] as const;
 
@@ -76,6 +78,7 @@ export default function LibraryPanel() {
         {active === "roles" && <JobRoleEditor />}
         {active === "training" && <TrainingEditor />}
         {active === "items" && <ItemEditor />}
+        {active === "org_units" && <OrgUnitEditor />}
         {active === "import" && <TrainingImport />}
       </div>
     </>

@@ -12,7 +12,7 @@ export type UserPayload = {
   full_name: string | null;
   email: string;
   role: string;
-  department: string | null;
+  org_unit_id: string | null;
   job_role_id: string | null;
   password?: string;
 };
@@ -20,7 +20,7 @@ export type UserPayload = {
 /** Validate a users-CSV row against the same rules as /api/users/create. */
 export function mapUserRow(
   row: Record<string, string>,
-  ctx: { jobRoleIdByName: Map<string, string>; callerRole: string | null },
+  ctx: { jobRoleIdByName: Map<string, string>; orgUnitIdByName: Map<string, string>; callerRole: string | null },
 ): MapResult<UserPayload> {
   const email = (row.email ?? "").trim();
   if (!email) return { ok: false, error: "Missing email" };
@@ -40,6 +40,14 @@ export function mapUserRow(
     job_role_id = id;
   }
 
+  const orgUnitName = (row.org_unit ?? "").trim();
+  let org_unit_id: string | null = null;
+  if (orgUnitName) {
+    const id = ctx.orgUnitIdByName.get(orgUnitName.toLowerCase());
+    if (!id) return { ok: false, error: `Unknown org unit: ${orgUnitName}` };
+    org_unit_id = id;
+  }
+
   const password = (row.password ?? "").trim();
   if (password && password.length < 8) return { ok: false, error: "Password must be at least 8 characters" };
 
@@ -50,7 +58,7 @@ export function mapUserRow(
     full_name: (row.full_name ?? "").trim() || null,
     email,
     role,
-    department: (row.department ?? "").trim() || null,
+    org_unit_id,
     job_role_id,
   };
   if (password) payload.password = password;

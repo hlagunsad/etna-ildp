@@ -16,7 +16,7 @@ export type SnapshotRow = {
 };
 export type CycleRow = { id: string; user_id: string };
 export type TnaRow = { dev_cycle_id: string; cycle_year: number; status: string; due_date: string | null };
-export type ProfileRow = { id: string; full_name: string | null; email: string | null; department: string | null };
+export type ProfileRow = { id: string; full_name: string | null; email: string | null; orgUnit: string | null };
 export type CompetencyRef = { id: string; name: string };
 
 export type HeatCell = {
@@ -29,7 +29,7 @@ export type HeatCell = {
 export type PersonRow = {
   userId: string;
   name: string;
-  department: string | null;
+  orgUnit: string | null;
   cycleYear: number;
   readiness: Readiness;
   cells: HeatCell[];
@@ -40,7 +40,7 @@ export type PersonRow = {
 export type Heatmap = { columns: CompetencyRef[]; people: PersonRow[] };
 
 export type RollupRow = { competencyId: string; name: string; peopleWithGap: number; gapSum: number; isCritical: boolean };
-export type DeptRow = { department: string; headcount: number; onTrack: number; atRisk: number; behind: number; openGaps: number };
+export type OrgUnitRollup = { orgUnit: string; headcount: number; onTrack: number; atRisk: number; behind: number; openGaps: number };
 
 const GAP_STATUSES: readonly string[] = ["open", "improving", "stalled", "regressed", "closed", "new", "retargeted"];
 
@@ -121,7 +121,7 @@ export function buildHeatmap(input: {
     people.push({
       userId: b.userId,
       name: prof?.full_name ?? prof?.email ?? "—",
-      department: prof?.department ?? null,
+      orgUnit: prof?.orgUnit ?? null,
       cycleYear: b.cycleYear,
       readiness,
       cells,
@@ -165,17 +165,17 @@ export function competencyRollup(
     .sort((a, b) => b.gapSum - a.gapSum || a.name.localeCompare(b.name));
 }
 
-export function departmentRollup(people: PersonRow[]): DeptRow[] {
-  const agg = new Map<string, DeptRow>();
+export function orgUnitRollup(people: PersonRow[]): OrgUnitRollup[] {
+  const agg = new Map<string, OrgUnitRollup>();
   for (const p of people) {
-    const department = (p.department && p.department.trim()) || "Unassigned";
-    const d = agg.get(department) ?? { department, headcount: 0, onTrack: 0, atRisk: 0, behind: 0, openGaps: 0 };
+    const orgUnit = (p.orgUnit && p.orgUnit.trim()) || "Unassigned";
+    const d = agg.get(orgUnit) ?? { orgUnit, headcount: 0, onTrack: 0, atRisk: 0, behind: 0, openGaps: 0 };
     d.headcount += 1;
     if (p.readiness === "on_track") d.onTrack += 1;
     else if (p.readiness === "at_risk") d.atRisk += 1;
     else d.behind += 1;
     d.openGaps += p.openGapCount;
-    agg.set(department, d);
+    agg.set(orgUnit, d);
   }
   return [...agg.values()].sort((a, b) => b.behind - a.behind || b.headcount - a.headcount);
 }

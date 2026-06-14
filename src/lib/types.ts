@@ -42,9 +42,11 @@ export type Profile = {
   role: Role;
   manager_id: string | null;
   job_role_id: string | null;
-  department: string | null;
+  org_unit_id: string | null;
   status: string;
 };
+
+export type OrgUnit = { id: string; name: string; description: string | null; parent_id: string | null };
 
 export type Competency = {
   id: string;

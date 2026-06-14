@@ -38,7 +38,10 @@ test.beforeAll(async () => {
   });
   const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
   const emp2 = data.users.find((u) => u.email === "employee2@demo.test");
-  if (emp2) await admin.from("dev_cycle").delete().eq("user_id", emp2.id); // cascade clears TNA/ILDP/snapshots
+  if (emp2) {
+    await admin.from("dev_cycle").delete().eq("user_id", emp2.id); // cascade clears TNA/ILDP/snapshots
+    await admin.from("notification").delete().eq("recipient_id", emp2.id); // start the bell clean (no-op pre-0005)
+  }
 });
 
 test("the seeded employee sees a populated development dashboard", async ({ page }) => {
@@ -90,6 +93,12 @@ test("happy path: employee takes TNA → supervisor validates → plan generated
   await page.getByRole("button", { name: /Eddie Employee/ }).click();
   await page.getByRole("button", { name: "Validate TNA" }).click();
   await expect(page.getByText(/plan generated/i)).toBeVisible();
+  await signOut(page);
+
+  // The DB trigger notified the employee that their TNA was validated — it shows in their bell.
+  await signIn(page, CREDS.employee2);
+  await page.getByRole("button", { name: /Notifications/ }).click();
+  await expect(page.getByText(/TNA was validated/i)).toBeVisible();
 });
 
 // Tidy up any rows a failed run might leave behind (the happy path deletes its own).
@@ -150,6 +159,19 @@ test("HR bulk-imports training resources from a pasted CSV", async ({ page }) =>
   // The imported rows show up in the Training catalog editor (titles cleaned by the afterAll above).
   await page.getByTestId("lib-tab-training").click();
   await expect(page.getByText(`E2E Course Import-${ts}-1`)).toBeVisible();
+});
+
+test("HR manages org units, and the create-user form assigns them", async ({ page }) => {
+  await signIn(page, CREDS.hr);
+  await page.getByRole("button", { name: "Library" }).click();
+  await page.getByTestId("lib-tab-org_units").click();
+  // The org-unit editor renders with the seeded hierarchy (Operations ▸ IT / Administration).
+  await expect(page.getByLabel("Parent unit")).toBeVisible();
+  await expect(page.getByText("under Operations").first()).toBeVisible();
+
+  // Admin's create-user form offers the org units as a select.
+  await page.getByRole("button", { name: "Admin" }).click();
+  await expect(page.getByLabel("Org unit")).toBeVisible();
 });
 
 // Restore the permission matrix to its seeded default after the permissions test.

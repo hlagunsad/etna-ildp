@@ -27,11 +27,11 @@ const ADMIN_OFFICER = "00000000-0000-0000-0000-0000000000b2";
 const IT_SUPERVISOR = "00000000-0000-0000-0000-0000000000b3";
 
 const USERS = [
-  { email: "super@demo.test", password: "lolom0panot000", role: "super_admin", full_name: "Sam Superadmin", department: "IT", jobRole: null, manager: null },
-  { email: "hr@demo.test", password: "lolom0panot111", role: "hr_admin", full_name: "Hana HR", department: "HR", jobRole: null, manager: null },
-  { email: "supervisor@demo.test", password: "lolom0panot222", role: "supervisor", full_name: "Vince Supervisor", department: "IT", jobRole: IT_SUPERVISOR, manager: "hr@demo.test" },
-  { email: "employee@demo.test", password: "lolom0panot333", role: "employee", full_name: "Ella Employee", department: "IT", jobRole: JR_ANALYST, manager: "supervisor@demo.test" },
-  { email: "employee2@demo.test", password: "lolom0panot444", role: "employee", full_name: "Eddie Employee", department: "Administration", jobRole: ADMIN_OFFICER, manager: "supervisor@demo.test" },
+  { email: "super@demo.test", password: "lolom0panot000", role: "super_admin", full_name: "Sam Superadmin", orgUnit: "IT", jobRole: null, manager: null },
+  { email: "hr@demo.test", password: "lolom0panot111", role: "hr_admin", full_name: "Hana HR", orgUnit: "HR", jobRole: null, manager: null },
+  { email: "supervisor@demo.test", password: "lolom0panot222", role: "supervisor", full_name: "Vince Supervisor", orgUnit: "IT", jobRole: IT_SUPERVISOR, manager: "hr@demo.test" },
+  { email: "employee@demo.test", password: "lolom0panot333", role: "employee", full_name: "Ella Employee", orgUnit: "IT", jobRole: JR_ANALYST, manager: "supervisor@demo.test" },
+  { email: "employee2@demo.test", password: "lolom0panot444", role: "employee", full_name: "Eddie Employee", orgUnit: "Administration", jobRole: ADMIN_OFFICER, manager: "supervisor@demo.test" },
 ];
 
 // Baseline self-ratings for the demo employee (by competency code). Some meet target, some lag.
@@ -74,16 +74,34 @@ async function main() {
   const idByEmail = {};
   for (const u of USERS) idByEmail[u.email] = await ensureUser(u);
 
-  console.log("2) profiles (role, job role, department)");
+  console.log("2) org units (a small hierarchy: Operations ▸ IT, Administration)");
+  const unitIdByName = {};
+  async function ensureUnit(name) {
+    const { data: existing } = await admin.from("org_unit").select("id").eq("name", name).maybeSingle();
+    let id = existing?.id;
+    if (!id) {
+      const { data, error } = await admin.from("org_unit").insert({ name }).select("id").single();
+      if (error) throw error;
+      id = data.id;
+    }
+    unitIdByName[name] = id;
+    return id;
+  }
+  const opsId = await ensureUnit("Operations");
+  for (const name of [...new Set(USERS.map((u) => u.orgUnit).filter(Boolean))]) await ensureUnit(name);
+  // Nest the operational units under Operations (HR stays top-level).
+  await admin.from("org_unit").update({ parent_id: opsId }).in("name", ["IT", "Administration"]);
+
+  console.log("3) profiles (role, job role, org unit)");
   for (const u of USERS) {
     const { error } = await admin
       .from("profiles")
-      .update({ role: u.role, full_name: u.full_name, department: u.department, job_role_id: u.jobRole, status: "active" })
+      .update({ role: u.role, full_name: u.full_name, org_unit_id: unitIdByName[u.orgUnit] ?? null, job_role_id: u.jobRole, status: "active" })
       .eq("id", idByEmail[u.email]);
     if (error) throw error;
   }
 
-  console.log("3) manager hierarchy (second pass)");
+  console.log("4) manager hierarchy (second pass)");
   for (const u of USERS) {
     if (!u.manager) continue;
     const { error } = await admin
@@ -101,7 +119,7 @@ async function main() {
   const itemsByComp = {};
   for (const it of items ?? []) (itemsByComp[it.competency_id] ??= []).push({ id: it.id, levelRank: rankByLevel[it.level_id] });
 
-  console.log("4) demo employee baseline (Year 1, validated, active ILDP)");
+  console.log("5) demo employee baseline (Year 1, validated, active ILDP)");
   const employeeId = idByEmail["employee@demo.test"];
   const supervisorId = idByEmail["supervisor@demo.test"];
   const hrId = idByEmail["hr@demo.test"];

@@ -3,42 +3,46 @@ import { mapUserRow, mapTrainingRow } from "./import";
 import type { ProficiencyLevel } from "./types";
 
 const jobRoleIdByName = new Map([["analyst", "jr1"]]);
+const orgUnitIdByName = new Map([["it", "ou1"]]);
 
 describe("mapUserRow", () => {
   it("maps a full valid row and carries the manager email", () => {
     const r = mapUserRow(
-      { full_name: " Ann Lee ", email: "ann@x.com", role: "supervisor", department: " IT ", job_role: "Analyst", manager_email: "boss@x.com", password: "secret12" },
-      { jobRoleIdByName, callerRole: "hr_admin" },
+      { full_name: " Ann Lee ", email: "ann@x.com", role: "supervisor", org_unit: " IT ", job_role: "Analyst", manager_email: "boss@x.com", password: "secret12" },
+      { jobRoleIdByName, orgUnitIdByName, callerRole: "hr_admin" },
     );
     expect(r).toEqual({
       ok: true,
-      payload: { full_name: "Ann Lee", email: "ann@x.com", role: "supervisor", department: "IT", job_role_id: "jr1", password: "secret12" },
+      payload: { full_name: "Ann Lee", email: "ann@x.com", role: "supervisor", org_unit_id: "ou1", job_role_id: "jr1", password: "secret12" },
       managerEmail: "boss@x.com",
     });
   });
   it("defaults a blank role to employee and a blank job role to null", () => {
-    const r = mapUserRow({ email: "a@b.com", role: "", job_role: "" }, { jobRoleIdByName, callerRole: "super_admin" });
+    const r = mapUserRow({ email: "a@b.com", role: "", job_role: "" }, { jobRoleIdByName, orgUnitIdByName, callerRole: "super_admin" });
     expect(r.ok && r.payload.role).toBe("employee");
     expect(r.ok && r.payload.job_role_id).toBeNull();
     expect(r.ok && r.payload.password).toBeUndefined();
     expect(r.ok && r.managerEmail).toBeUndefined();
   });
   it("rejects a missing or malformed email", () => {
-    expect(mapUserRow({ email: "" }, { jobRoleIdByName, callerRole: "super_admin" })).toEqual({ ok: false, error: "Missing email" });
-    expect(mapUserRow({ email: "nope" }, { jobRoleIdByName, callerRole: "super_admin" }).ok).toBe(false);
+    expect(mapUserRow({ email: "" }, { jobRoleIdByName, orgUnitIdByName, callerRole: "super_admin" })).toEqual({ ok: false, error: "Missing email" });
+    expect(mapUserRow({ email: "nope" }, { jobRoleIdByName, orgUnitIdByName, callerRole: "super_admin" }).ok).toBe(false);
   });
   it("rejects an invalid role", () => {
-    expect(mapUserRow({ email: "a@b.com", role: "boss" }, { jobRoleIdByName, callerRole: "super_admin" })).toEqual({ ok: false, error: "Invalid role: boss" });
+    expect(mapUserRow({ email: "a@b.com", role: "boss" }, { jobRoleIdByName, orgUnitIdByName, callerRole: "super_admin" })).toEqual({ ok: false, error: "Invalid role: boss" });
   });
   it("blocks HR from creating admin accounts but lets super-admin do it", () => {
-    expect(mapUserRow({ email: "a@b.com", role: "hr_admin" }, { jobRoleIdByName, callerRole: "hr_admin" }).ok).toBe(false);
-    expect(mapUserRow({ email: "a@b.com", role: "super_admin" }, { jobRoleIdByName, callerRole: "hr_admin" }).ok).toBe(false);
-    expect(mapUserRow({ email: "a@b.com", role: "hr_admin" }, { jobRoleIdByName, callerRole: "super_admin" }).ok).toBe(true);
+    expect(mapUserRow({ email: "a@b.com", role: "hr_admin" }, { jobRoleIdByName, orgUnitIdByName, callerRole: "hr_admin" }).ok).toBe(false);
+    expect(mapUserRow({ email: "a@b.com", role: "super_admin" }, { jobRoleIdByName, orgUnitIdByName, callerRole: "hr_admin" }).ok).toBe(false);
+    expect(mapUserRow({ email: "a@b.com", role: "hr_admin" }, { jobRoleIdByName, orgUnitIdByName, callerRole: "super_admin" }).ok).toBe(true);
+  });
+  it("rejects an unknown org unit", () => {
+    expect(mapUserRow({ email: "a@b.com", org_unit: "Atlantis" }, { jobRoleIdByName, orgUnitIdByName, callerRole: "super_admin" })).toEqual({ ok: false, error: "Unknown org unit: Atlantis" });
   });
   it("rejects an unknown job role and a too-short password and a bad manager email", () => {
-    expect(mapUserRow({ email: "a@b.com", job_role: "Wizard" }, { jobRoleIdByName, callerRole: "super_admin" })).toEqual({ ok: false, error: "Unknown job role: Wizard" });
-    expect(mapUserRow({ email: "a@b.com", password: "short" }, { jobRoleIdByName, callerRole: "super_admin" }).ok).toBe(false);
-    expect(mapUserRow({ email: "a@b.com", manager_email: "nope" }, { jobRoleIdByName, callerRole: "super_admin" }).ok).toBe(false);
+    expect(mapUserRow({ email: "a@b.com", job_role: "Wizard" }, { jobRoleIdByName, orgUnitIdByName, callerRole: "super_admin" })).toEqual({ ok: false, error: "Unknown job role: Wizard" });
+    expect(mapUserRow({ email: "a@b.com", password: "short" }, { jobRoleIdByName, orgUnitIdByName, callerRole: "super_admin" }).ok).toBe(false);
+    expect(mapUserRow({ email: "a@b.com", manager_email: "nope" }, { jobRoleIdByName, orgUnitIdByName, callerRole: "super_admin" }).ok).toBe(false);
   });
 });
 

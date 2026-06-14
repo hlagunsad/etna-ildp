@@ -5,7 +5,7 @@ import {
   buildHeatmap,
   readinessDistribution,
   competencyRollup,
-  departmentRollup,
+  orgUnitRollup,
   toCsv,
   type SnapshotRow,
   type CycleRow,
@@ -26,8 +26,8 @@ const CYCLES: CycleRow[] = [
   { id: "cyc2", user_id: "u2" },
 ];
 const PROFILES: ProfileRow[] = [
-  { id: "u1", full_name: "Ann", email: "ann@x", department: "IT" },
-  { id: "u2", full_name: "Bob", email: "bob@x", department: null },
+  { id: "u1", full_name: "Ann", email: "ann@x", orgUnit: "IT" },
+  { id: "u2", full_name: "Bob", email: "bob@x", orgUnit: null },
 ];
 const SNAPS: SnapshotRow[] = [
   // u1 / cyc1 — year 1 then year 2 (latest wins)
@@ -119,13 +119,13 @@ describe("competencyRollup", () => {
   });
 });
 
-describe("departmentRollup", () => {
-  it("groups by department (null → Unassigned) with readiness + open-gap counts, behind first", () => {
-    const rows = departmentRollup(heat().people);
-    expect(rows.map((r) => r.department)).toEqual(["Unassigned", "IT"]); // Bob (behind) sorts first
-    const it = rows.find((r) => r.department === "IT")!;
+describe("orgUnitRollup", () => {
+  it("groups by org unit (null → Unassigned) with readiness + open-gap counts, behind first", () => {
+    const rows = orgUnitRollup(heat().people);
+    expect(rows.map((r) => r.orgUnit)).toEqual(["Unassigned", "IT"]); // Bob (behind) sorts first
+    const it = rows.find((r) => r.orgUnit === "IT")!;
     expect(it).toMatchObject({ headcount: 1, onTrack: 1, behind: 0, openGaps: 1 });
-    const un = rows.find((r) => r.department === "Unassigned")!;
+    const un = rows.find((r) => r.orgUnit === "Unassigned")!;
     expect(un).toMatchObject({ headcount: 1, behind: 1, openGaps: 1 });
   });
 });

@@ -16,11 +16,13 @@ export default function MemberDetail({
   member,
   role,
   selfId,
+  orgUnitName,
   onBack,
 }: {
   member: Profile;
   role: Role | null;
   selfId: string;
+  orgUnitName?: string | null;
   onBack: () => void;
 }) {
   const can = useCan();
@@ -79,7 +81,7 @@ export default function MemberDetail({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="font-display text-2xl font-semibold text-ink">{member.full_name ?? member.email}</h1>
-          <p className="text-sm text-muted">{member.email} · {member.department}</p>
+          <p className="text-sm text-muted">{member.email}{orgUnitName ? ` · ${orgUnitName}` : ""}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {notSelf && latestTna?.status === "submitted" && can(role, "validate_tna") && (

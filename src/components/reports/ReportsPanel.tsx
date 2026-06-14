@@ -5,7 +5,7 @@ import { loadReportData, type ReportData } from "@/lib/queries";
 import {
   buildHeatmap,
   competencyRollup,
-  departmentRollup,
+  orgUnitRollup,
   pickLatestYear,
   readinessDistribution,
   toCsv,
@@ -45,14 +45,14 @@ export default function ReportsPanel({ role }: { role: Role | null }) {
   const latest = pickLatestYear(data.snapshots);
   const dist = readinessDistribution(people);
   const compRollup = competencyRollup(latest, data.competencies, data.criticalByCompetency);
-  const deptRollup = departmentRollup(people);
+  const orgRollup = orgUnitRollup(people);
   const criticalGaps = people.reduce((n, p) => n + p.criticalGapCount, 0);
 
   function exportCsv() {
-    const headers = ["Person", "Department", "Readiness", ...columns.map((c) => c.name)];
+    const headers = ["Person", "Org unit", "Readiness", ...columns.map((c) => c.name)];
     const rows = people.map((p) => [
       p.name,
-      p.department ?? "Unassigned",
+      p.orgUnit ?? "Unassigned",
       READINESS_LABEL[p.readiness],
       ...p.cells.map((c) => (c ? c.label : "")),
     ]);
@@ -119,7 +119,7 @@ export default function ReportsPanel({ role }: { role: Role | null }) {
                         <span className="block font-medium text-ink">{p.name}</span>
                         <span className="mt-0.5 flex items-center gap-1.5">
                           <Pill tone={READINESS_TONE[p.readiness]}>{READINESS_LABEL[p.readiness]}</Pill>
-                          {p.department && <span className="text-xs text-muted">{p.department}</span>}
+                          {p.orgUnit && <span className="text-xs text-muted">{p.orgUnit}</span>}
                         </span>
                       </th>
                       {p.cells.map((cell, i) => (
@@ -176,12 +176,12 @@ export default function ReportsPanel({ role }: { role: Role | null }) {
           </Card>
 
           <Card className="p-5 sm:p-6">
-            <h2 className="mb-3 text-sm font-semibold text-muted">By department</h2>
+            <h2 className="mb-3 text-sm font-semibold text-muted">By org unit</h2>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[34rem] text-sm">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-faint">
-                    <th scope="col" className="pb-2 font-medium">Department</th>
+                    <th scope="col" className="pb-2 font-medium">Org unit</th>
                     <th scope="col" className="pb-2 font-medium">Headcount</th>
                     <th scope="col" className="pb-2 font-medium">On Track</th>
                     <th scope="col" className="pb-2 font-medium">At Risk</th>
@@ -190,9 +190,9 @@ export default function ReportsPanel({ role }: { role: Role | null }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {deptRollup.map((d) => (
-                    <tr key={d.department} className="border-t border-line">
-                      <td className="py-2.5 font-medium text-ink">{d.department}</td>
+                  {orgRollup.map((d) => (
+                    <tr key={d.orgUnit} className="border-t border-line">
+                      <td className="py-2.5 font-medium text-ink">{d.orgUnit}</td>
                       <td className="py-2.5 tabular-nums text-muted">{d.headcount}</td>
                       <td className="py-2.5 tabular-nums text-muted">{d.onTrack}</td>
                       <td className="py-2.5 tabular-nums text-muted">{d.atRisk}</td>

@@ -3,24 +3,26 @@
 import { useCallback, useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { Card, PageHeader, Pill, Spinner } from "./ui";
-import type { Profile, Role } from "@/lib/types";
+import type { OrgUnit, Profile, Role } from "@/lib/types";
 import MemberDetail from "./MemberDetail";
 
 type Summary = { cycleYear: number | null; cycleStatus: string | null; tnaStatus: string | null; ildpStatus: string | null };
 
 export default function TeamPanel({ selfId, role }: { selfId: string; role: Role | null }) {
   const [members, setMembers] = useState<Profile[] | null>(null);
+  const [orgUnits, setOrgUnits] = useState<OrgUnit[]>([]);
   const [statusById, setStatusById] = useState<Record<string, Summary>>({});
   const [selected, setSelected] = useState<Profile | null>(null);
 
   const load = useCallback(async () => {
     const sb = getSupabase();
-    const { data: reports } = await sb
-      .from("profiles")
-      .select("id, full_name, email, role, manager_id, job_role_id, department, status")
-      .eq("manager_id", selfId);
+    const [{ data: reports }, { data: units }] = await Promise.all([
+      sb.from("profiles").select("id, full_name, email, role, manager_id, job_role_id, org_unit_id, status").eq("manager_id", selfId),
+      sb.from("org_unit").select("id, name, description, parent_id").order("name"),
+    ]);
     const list = (reports ?? []) as Profile[];
     setMembers(list);
+    setOrgUnits((units ?? []) as OrgUnit[]);
 
     const summary: Record<string, Summary> = {};
     for (const m of list) {
@@ -39,8 +41,10 @@ export default function TeamPanel({ selfId, role }: { selfId: string; role: Role
   // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch on mount; setState runs after the awaited load, not a synchronous cascade
   useEffect(() => { load(); }, [load]);
 
+  const orgUnitName = (id: string | null) => orgUnits.find((u) => u.id === id)?.name ?? null;
+
   if (selected) {
-    return <MemberDetail member={selected} role={role} selfId={selfId} onBack={() => { setSelected(null); load(); }} />;
+    return <MemberDetail member={selected} role={role} selfId={selfId} orgUnitName={orgUnitName(selected.org_unit_id)} onBack={() => { setSelected(null); load(); }} />;
   }
   if (!members) return <Spinner />;
 
@@ -64,7 +68,7 @@ export default function TeamPanel({ selfId, role }: { selfId: string; role: Role
                   <span className="font-medium text-ink">{m.full_name ?? m.email}</span>
                   {needsAction && <Pill tone="warn">Action needed</Pill>}
                 </div>
-                <p className="mt-0.5 text-xs text-muted">{m.department}</p>
+                <p className="mt-0.5 text-xs text-muted">{orgUnitName(m.org_unit_id) ?? "—"}</p>
                 <p className="mt-2 text-xs text-muted">
                   Cycle {s?.cycleYear ? `Y${s.cycleYear} · ${s.cycleStatus}` : "—"} · TNA {s?.tnaStatus ?? "—"} · ILDP {s?.ildpStatus ?? "—"}
                 </p>

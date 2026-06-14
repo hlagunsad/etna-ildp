@@ -42,6 +42,8 @@ export async function POST(req: Request) {
   // Lookups (once): job roles by name, and every existing account by email.
   const { data: jobRoles } = await db.from("job_role").select("id, name");
   const jobRoleIdByName = new Map(((jobRoles ?? []) as { id: string; name: string }[]).map((j) => [j.name.toLowerCase(), j.id]));
+  const { data: orgUnits } = await db.from("org_unit").select("id, name");
+  const orgUnitIdByName = new Map(((orgUnits ?? []) as { id: string; name: string }[]).map((u) => [u.name.toLowerCase(), u.id]));
   const { data: usersPage } = await db.auth.admin.listUsers({ page: 1, perPage: 200 });
   const idByEmail = new Map<string, string>();
   for (const u of usersPage?.users ?? []) if (u.email) idByEmail.set(u.email.toLowerCase(), u.id);
@@ -55,7 +57,7 @@ export async function POST(req: Request) {
     line += 1;
     const label = (row.email ?? "").trim() || "(no email)";
     try {
-      const mapped = mapUserRow(row, { jobRoleIdByName, callerRole });
+      const mapped = mapUserRow(row, { jobRoleIdByName, orgUnitIdByName, callerRole });
       if (!mapped.ok) {
         results.push({ line, label, status: "error", message: mapped.error });
         continue;
@@ -77,7 +79,7 @@ export async function POST(req: Request) {
 
       const { error: pErr } = await db
         .from("profiles")
-        .update({ full_name: p.full_name, role: p.role, department: p.department, job_role_id: p.job_role_id, status: "active" })
+        .update({ full_name: p.full_name, role: p.role, org_unit_id: p.org_unit_id, job_role_id: p.job_role_id, status: "active" })
         .eq("id", created.user.id);
       idByEmail.set(emailLower, created.user.id);
       if (pErr) {

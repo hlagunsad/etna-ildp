@@ -7,12 +7,18 @@ import type {
   Ildp,
   IldpItem,
   Level,
+  OrgUnit,
   ProficiencyLevel,
   Scale,
   Snapshot,
   Target,
   Tna,
 } from "./types";
+
+export async function loadOrgUnits(): Promise<OrgUnit[]> {
+  const { data } = await getSupabase().from("org_unit").select("id, name, description, parent_id").order("name");
+  return (data ?? []) as OrgUnit[];
+}
 
 export async function loadLookups(): Promise<{ competencies: Competency[]; levels: Level[] }> {
   const sb = getSupabase();
@@ -83,7 +89,7 @@ export async function loadBoard(userId: string): Promise<Board> {
 export type ReportData = {
   cycles: { id: string; user_id: string; current_year: number; snapshot_of_targets: Target[] }[];
   snapshots: Snapshot[];
-  profiles: { id: string; full_name: string | null; email: string | null; department: string | null }[];
+  profiles: { id: string; full_name: string | null; email: string | null; orgUnit: string | null }[];
   competencies: Competency[];
   criticalByCompetency: Set<string>;
   tnas: { dev_cycle_id: string; cycle_year: number; status: string; due_date: string | null }[];
@@ -96,20 +102,29 @@ export type ReportData = {
  */
 export async function loadReportData(): Promise<ReportData> {
   const sb = getSupabase();
-  const [lk, { data: cycles }, { data: snapshots }, { data: profiles }, { data: tnas }] = await Promise.all([
+  const [lk, { data: cycles }, { data: snapshots }, { data: profiles }, { data: tnas }, { data: units }] = await Promise.all([
     loadLookups(),
     sb.from("dev_cycle").select("id, user_id, current_year, snapshot_of_targets"),
     sb.from("progress_snapshot").select("dev_cycle_id, cycle_year, competency_id, assessed_rank, target_rank, gap_size, gap_status"),
-    sb.from("profiles").select("id, full_name, email, department"),
+    sb.from("profiles").select("id, full_name, email, org_unit_id"),
     sb.from("tna_assessment").select("dev_cycle_id, cycle_year, status, due_date"),
+    sb.from("org_unit").select("id, name"),
   ]);
   const cyc = (cycles ?? []) as ReportData["cycles"];
   const criticalByCompetency = new Set<string>();
   for (const c of cyc) for (const t of c.snapshot_of_targets ?? []) if (t.isCritical) criticalByCompetency.add(t.competencyId);
+  // Resolve each person's org-unit id → name (RLS lets every member read the unit list).
+  const unitName = new Map(((units ?? []) as { id: string; name: string }[]).map((u) => [u.id, u.name]));
+  const profs = ((profiles ?? []) as { id: string; full_name: string | null; email: string | null; org_unit_id: string | null }[]).map((p) => ({
+    id: p.id,
+    full_name: p.full_name,
+    email: p.email,
+    orgUnit: p.org_unit_id ? unitName.get(p.org_unit_id) ?? null : null,
+  }));
   return {
     cycles: cyc,
     snapshots: (snapshots ?? []) as Snapshot[],
-    profiles: (profiles ?? []) as ReportData["profiles"],
+    profiles: profs,
     competencies: lk.competencies,
     criticalByCompetency,
     tnas: (tnas ?? []) as ReportData["tnas"],
