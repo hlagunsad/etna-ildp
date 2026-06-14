@@ -71,6 +71,7 @@ export type Tna = {
   cycle_year: number;
   type: string;
   status: string;
+  due_date?: string | null;
   validated_by: string | null;
 };
 

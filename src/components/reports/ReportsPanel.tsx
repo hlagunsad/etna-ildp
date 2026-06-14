@@ -39,6 +39,8 @@ export default function ReportsPanel({ role }: { role: Role | null }) {
     profiles: data.profiles,
     competencies: data.competencies,
     criticalByCompetency: data.criticalByCompetency,
+    tnas: data.tnas,
+    today: new Date().toISOString().slice(0, 10),
   });
   const latest = pickLatestYear(data.snapshots);
   const dist = readinessDistribution(people);

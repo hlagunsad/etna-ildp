@@ -86,6 +86,7 @@ export type ReportData = {
   profiles: { id: string; full_name: string | null; email: string | null; department: string | null }[];
   competencies: Competency[];
   criticalByCompetency: Set<string>;
+  tnas: { dev_cycle_id: string; cycle_year: number; status: string; due_date: string | null }[];
 };
 
 /**
@@ -95,11 +96,12 @@ export type ReportData = {
  */
 export async function loadReportData(): Promise<ReportData> {
   const sb = getSupabase();
-  const [lk, { data: cycles }, { data: snapshots }, { data: profiles }] = await Promise.all([
+  const [lk, { data: cycles }, { data: snapshots }, { data: profiles }, { data: tnas }] = await Promise.all([
     loadLookups(),
     sb.from("dev_cycle").select("id, user_id, current_year, snapshot_of_targets"),
     sb.from("progress_snapshot").select("dev_cycle_id, cycle_year, competency_id, assessed_rank, target_rank, gap_size, gap_status"),
     sb.from("profiles").select("id, full_name, email, department"),
+    sb.from("tna_assessment").select("dev_cycle_id, cycle_year, status, due_date"),
   ]);
   const cyc = (cycles ?? []) as ReportData["cycles"];
   const criticalByCompetency = new Set<string>();
@@ -110,6 +112,7 @@ export async function loadReportData(): Promise<ReportData> {
     profiles: (profiles ?? []) as ReportData["profiles"],
     competencies: lk.competencies,
     criticalByCompetency,
+    tnas: (tnas ?? []) as ReportData["tnas"],
   };
 }
 

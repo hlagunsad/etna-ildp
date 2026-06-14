@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { nextYear, isFinalYear, cycleOutcome, lockTargets } from "./cycle";
+import { nextYear, isFinalYear, cycleOutcome, lockTargets, eligibleForCycle, isTnaOnTime } from "./cycle";
 import type { Target } from "./types";
 
 describe("nextYear / isFinalYear", () => {
@@ -34,5 +34,37 @@ describe("cycleOutcome", () => {
   });
   it("carry_over when a critical competency is unmet", () => {
     expect(cycleOutcome([{ isCritical: true, status: "stalled" }])).toBe("carry_over");
+  });
+});
+
+describe("eligibleForCycle", () => {
+  const profiles: { id: string; job_role_id: string | null }[] = [
+    { id: "u1", job_role_id: "jr1" }, // has a role
+    { id: "u2", job_role_id: "jr2" }, // has a role + a cycle
+    { id: "u3", job_role_id: null }, // no role
+  ];
+  it("returns only people with a job role and no existing cycle", () => {
+    expect(eligibleForCycle(profiles, new Set(["u2"])).map((p) => p.id)).toEqual(["u1"]);
+  });
+  it("returns none when everyone has a cycle or lacks a role", () => {
+    expect(eligibleForCycle(profiles, new Set(["u1", "u2"]))).toEqual([]);
+  });
+});
+
+describe("isTnaOnTime", () => {
+  const today = "2026-06-14";
+  it("is on-time when there is no due date", () => {
+    expect(isTnaOnTime({ due_date: null, status: "in_progress" }, today)).toBe(true);
+  });
+  it("is late when the deadline passed and the TNA is still open", () => {
+    expect(isTnaOnTime({ due_date: "2026-06-01", status: "in_progress" }, today)).toBe(false);
+    expect(isTnaOnTime({ due_date: "2026-06-01", status: "not_started" }, today)).toBe(false);
+  });
+  it("is on-time once submitted/validated, even past the deadline", () => {
+    expect(isTnaOnTime({ due_date: "2026-06-01", status: "submitted" }, today)).toBe(true);
+    expect(isTnaOnTime({ due_date: "2026-06-01", status: "validated" }, today)).toBe(true);
+  });
+  it("is on-time when the deadline is still in the future", () => {
+    expect(isTnaOnTime({ due_date: "2026-12-31", status: "in_progress" }, today)).toBe(true);
   });
 });

@@ -181,3 +181,22 @@ test("super admin configures role permissions (grants Organization view to super
   await signIn(page, CREDS.supervisor);
   await expect(page.getByRole("button", { name: "Organization" })).toBeVisible();
 });
+
+// Restore the seed baseline (only employee@demo.test keeps a cycle) after the scheduler test.
+test.afterAll(async () => {
+  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const keep = data.users.find((u) => u.email === "employee@demo.test")?.id;
+  if (keep) await admin.from("dev_cycle").delete().neq("user_id", keep); // cascades TNA/ILDP/snapshots
+});
+
+test("HR opens development cycles from the scheduler", async ({ page }) => {
+  await signIn(page, CREDS.hr);
+  await page.getByRole("button", { name: "Cycles" }).click();
+  await expect(page.getByRole("heading", { name: "Cycle scheduler" })).toBeVisible();
+  // Eligible = job role + no cycle (the supervisor qualifies); open them.
+  await page.getByRole("button", { name: /Open \d+ cycle/ }).click();
+  await expect(page.getByText("opened").first()).toBeVisible();
+});

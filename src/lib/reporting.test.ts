@@ -11,6 +11,7 @@ import {
   type CycleRow,
   type ProfileRow,
   type CompetencyRef,
+  type TnaRow,
 } from "./reporting";
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
@@ -133,5 +134,15 @@ describe("toCsv", () => {
   it("escapes commas, quotes, and nulls; joins with CRLF", () => {
     const csv = toCsv(["a", "b"], [["x", "y"], ["p,q", 'he said "hi"'], [null, 1]]);
     expect(csv).toBe('a,b\r\n' + 'x,y\r\n' + '"p,q","he said ""hi"""\r\n' + ',1');
+  });
+});
+
+describe("buildHeatmap readiness on-time", () => {
+  it("an overdue, still-open TNA makes the person Behind", () => {
+    const tnas: TnaRow[] = [
+      { dev_cycle_id: "cyc1", cycle_year: 2, status: "in_progress", due_date: "2020-01-01" }, // Ann's current round, overdue
+    ];
+    const { people } = buildHeatmap({ snaps: SNAPS, cycles: CYCLES, profiles: PROFILES, competencies: COMPS, criticalByCompetency: CRITICAL, tnas, today: "2026-06-14" });
+    expect(people.find((p) => p.userId === "u1")?.readiness).toBe("behind");
   });
 });

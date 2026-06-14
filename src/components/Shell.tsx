@@ -16,6 +16,7 @@ import OrgPanel from "./OrgPanel";
 import AdminPanel from "./AdminPanel";
 import LibraryPanel from "./library/LibraryPanel";
 import ReportsPanel from "./reports/ReportsPanel";
+import CycleScheduler from "./CycleScheduler";
 
 type Tab = { key: string; label: string; icon: ReactNode };
 
@@ -56,6 +57,7 @@ const ic = {
   audit: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4",
   library: "M12 2 2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
   reports: "M3 3v18h18M7 16l4-5 3 3 5-7",
+  cycles: "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z",
 };
 
 function NavIcon({ d }: { d: string }) {
@@ -85,6 +87,7 @@ export default function Shell({ session, profile }: { session: Session; profile:
   ];
   if (can(role, "view_team")) tabs.push({ key: "team", label: "Team", icon: <NavIcon d={ic.team} /> });
   if (can(role, "view_org")) tabs.push({ key: "org", label: "Organization", icon: <NavIcon d={ic.org} /> });
+  if (can(role, "advance_year")) tabs.push({ key: "cycles", label: "Cycles", icon: <NavIcon d={ic.cycles} /> });
   if (can(role, "view_team")) tabs.push({ key: "reports", label: "Reports", icon: <NavIcon d={ic.reports} /> });
   if (can(role, "manage_library")) tabs.push({ key: "library", label: "Library", icon: <NavIcon d={ic.library} /> });
   if (can(role, "view_audit")) tabs.push({ key: "audit", label: "Admin", icon: <NavIcon d={ic.audit} /> });
@@ -222,6 +225,7 @@ export default function Shell({ session, profile }: { session: Session; profile:
           {active === "training" && <MyTraining userId={userId} />}
           {active === "team" && <TeamPanel selfId={userId} role={role} />}
           {active === "org" && <OrgPanel />}
+          {active === "cycles" && <CycleScheduler />}
           {active === "reports" && <ReportsPanel role={role} />}
           {active === "library" && <LibraryPanel />}
           {active === "audit" && <AdminPanel canUsers={can(role, "manage_users")} role={role} />}

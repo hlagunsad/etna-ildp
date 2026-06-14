@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { loadBoard, loadLookups, type Board } from "@/lib/queries";
 import { cycleReadiness } from "@/lib/readiness";
+import { isTnaOnTime } from "@/lib/cycle";
 import { apiPost } from "@/lib/api";
 import { GAP_LABEL, GAP_TONE, READINESS_LABEL, READINESS_TONE } from "@/lib/labels";
 import { Button, Card, EmptyState, PageHeader, Pill, Spinner } from "../ui";
@@ -57,9 +58,12 @@ export default function EmployeeDashboard({ userId, self, embedded }: { userId: 
   }
 
   const criticalSet = new Set(board.cycle.snapshot_of_targets.filter((t) => t.isCritical).map((t) => t.competencyId));
+  const currentYear = board.cycle.current_year;
+  const currentTna = board.tnas.find((t) => t.cycle_year === currentYear);
+  const today = new Date().toISOString().slice(0, 10);
   const readiness: Readiness = cycleReadiness({
     items: board.items.map((i) => ({ isCritical: criticalSet.has(i.competency_id), status: i.gap_status })),
-    tnaOnTimeThisYear: true,
+    tnaOnTimeThisYear: currentTna ? isTnaOnTime({ due_date: currentTna.due_date ?? null, status: currentTna.status }, today) : true,
   });
   const sortedItems = [...board.items].sort((a, b) => b.priority - a.priority);
 

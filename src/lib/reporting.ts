@@ -2,6 +2,7 @@
 
 import { cycleReadiness } from "./readiness";
 import { gapSize } from "./gap";
+import { isTnaOnTime } from "./cycle";
 import type { GapStatus, Readiness } from "./types";
 
 // ── Row shapes (the caller passes raw Supabase rows) ──────────────────────────
@@ -14,6 +15,7 @@ export type SnapshotRow = {
   gap_status: string | null;
 };
 export type CycleRow = { id: string; user_id: string };
+export type TnaRow = { dev_cycle_id: string; cycle_year: number; status: string; due_date: string | null };
 export type ProfileRow = { id: string; full_name: string | null; email: string | null; department: string | null };
 export type CompetencyRef = { id: string; name: string };
 
@@ -71,14 +73,17 @@ export function buildHeatmap(input: {
   profiles: ProfileRow[];
   competencies: CompetencyRef[];
   criticalByCompetency: Set<string>;
+  tnas?: TnaRow[];
+  today?: string;
 }): Heatmap {
-  const { snaps, cycles, profiles, competencies, criticalByCompetency } = input;
+  const { snaps, cycles, profiles, competencies, criticalByCompetency, tnas = [], today = new Date().toISOString().slice(0, 10) } = input;
   const latest = pickLatestYear(snaps);
+  const tnaByKey = new Map(tnas.map((t) => [`${t.dev_cycle_id}:${t.cycle_year}`, t]));
   const userByCycle = new Map(cycles.map((c) => [c.id, c.user_id]));
   const profileById = new Map(profiles.map((p) => [p.id, p]));
   const nameByComp = new Map(competencies.map((c) => [c.id, c.name]));
 
-  type Bucket = { userId: string; cycleYear: number; byComp: Map<string, SnapshotRow> };
+  type Bucket = { userId: string; cycleYear: number; devCycleId: string; byComp: Map<string, SnapshotRow> };
   const buckets = new Map<string, Bucket>();
   const colIds = new Set<string>();
   for (const s of latest) {
@@ -86,7 +91,7 @@ export function buildHeatmap(input: {
     if (!userId) continue; // snapshot whose cycle isn't visible (RLS / stale) → ignore
     let b = buckets.get(userId);
     if (!b) {
-      b = { userId, cycleYear: s.cycle_year, byComp: new Map() };
+      b = { userId, cycleYear: s.cycle_year, devCycleId: s.dev_cycle_id, byComp: new Map() };
       buckets.set(userId, b);
     }
     b.byComp.set(s.competency_id, s);
@@ -108,9 +113,10 @@ export function buildHeatmap(input: {
       return { assessedRank: s.assessed_rank, targetRank: s.target_rank, gapStatus, label };
     });
     const rows = [...b.byComp.values()];
+    const tna = tnaByKey.get(`${b.devCycleId}:${b.cycleYear}`);
     const readiness = cycleReadiness({
       items: rows.map((s) => ({ isCritical: criticalByCompetency.has(s.competency_id), status: normalizeGapStatus(s.gap_status) })),
-      tnaOnTimeThisYear: true, // a snapshot exists only because a TNA was validated
+      tnaOnTimeThisYear: tna ? isTnaOnTime(tna, today) : true,
     });
     people.push({
       userId: b.userId,
