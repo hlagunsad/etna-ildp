@@ -15,6 +15,7 @@ import TeamPanel from "./TeamPanel";
 import OrgPanel from "./OrgPanel";
 import AdminPanel from "./AdminPanel";
 import LibraryPanel from "./library/LibraryPanel";
+import ReportsPanel from "./reports/ReportsPanel";
 
 type Tab = { key: string; label: string; icon: ReactNode };
 
@@ -54,6 +55,7 @@ const ic = {
   org: "M4 21V5a2 2 0 0 1 2-2h6v18M12 9h6a2 2 0 0 1 2 2v10M8 7h0M8 11h0M8 15h0M16 13h0M16 17h0",
   audit: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4",
   library: "M12 2 2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
+  reports: "M3 3v18h18M7 16l4-5 3 3 5-7",
 };
 
 function NavIcon({ d }: { d: string }) {
@@ -82,6 +84,7 @@ export default function Shell({ session, profile }: { session: Session; profile:
   ];
   if (can(role, "view_team")) tabs.push({ key: "team", label: "Team", icon: <NavIcon d={ic.team} /> });
   if (can(role, "view_org")) tabs.push({ key: "org", label: "Organization", icon: <NavIcon d={ic.org} /> });
+  if (can(role, "view_team")) tabs.push({ key: "reports", label: "Reports", icon: <NavIcon d={ic.reports} /> });
   if (can(role, "manage_library")) tabs.push({ key: "library", label: "Library", icon: <NavIcon d={ic.library} /> });
   if (can(role, "view_audit")) tabs.push({ key: "audit", label: "Admin", icon: <NavIcon d={ic.audit} /> });
 
@@ -218,6 +221,7 @@ export default function Shell({ session, profile }: { session: Session; profile:
           {active === "training" && <MyTraining userId={userId} />}
           {active === "team" && <TeamPanel selfId={userId} role={role} />}
           {active === "org" && <OrgPanel />}
+          {active === "reports" && <ReportsPanel role={role} />}
           {active === "library" && <LibraryPanel />}
           {active === "audit" && <AdminPanel canUsers={can(role, "manage_users")} role={role} />}
         </div>

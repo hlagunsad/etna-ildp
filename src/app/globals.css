@@ -104,3 +104,29 @@ body {
 .rise {
   animation: lb-rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* ── Print: show only the active report, hide the app chrome ───────────────── */
+@media print {
+  aside,
+  header,
+  [role="dialog"],
+  .skip-link {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  .print-area .overflow-x-auto {
+    overflow: visible !important; /* print the whole heatmap, not a clipped scroll viewport */
+  }
+  .print-area > * {
+    break-inside: avoid;
+  }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important; /* keep the gap-status tints */
+  }
+}

@@ -110,3 +110,14 @@ test("HR authors the content library: add then delete a training resource", asyn
   await row.getByRole("button", { name: "Confirm delete", exact: true }).click();
   await expect(page.getByText(marker)).toHaveCount(0);
 });
+
+test("supervisor sees the team competency report with the heatmap", async ({ page }) => {
+  await signIn(page, CREDS.supervisor);
+  await page.getByRole("button", { name: "Reports" }).click();
+  // RLS scopes the report to direct reports → the supervisor gets the "Team report".
+  await expect(page.getByRole("heading", { name: "Team report" })).toBeVisible();
+  // Ella (a direct report) has a seeded Cybersecurity gap → it's a heatmap column.
+  await expect(page.getByRole("columnheader", { name: "Cybersecurity" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Export CSV" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Print / PDF" })).toBeVisible();
+});

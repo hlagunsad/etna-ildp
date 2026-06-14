@@ -9,6 +9,7 @@ import type {
   ProficiencyLevel,
   Scale,
   Snapshot,
+  Target,
   Tna,
 } from "./types";
 
@@ -75,5 +76,38 @@ export async function loadBoard(userId: string): Promise<Board> {
     ildp: (ildp ?? null) as Ildp | null,
     items,
     snapshots: (snapshots ?? []) as Snapshot[],
+  };
+}
+
+export type ReportData = {
+  cycles: { id: string; user_id: string; current_year: number; snapshot_of_targets: Target[] }[];
+  snapshots: Snapshot[];
+  profiles: { id: string; full_name: string | null; email: string | null; department: string | null }[];
+  competencies: Competency[];
+  criticalByCompetency: Set<string>;
+};
+
+/**
+ * Everything the Reports area needs, in one round trip. The four selects are
+ * UNFILTERED — Row-Level Security scopes them automatically: org-wide for HR/super
+ * (is_admin), only-direct-reports for a supervisor (is_manager_of). No role branching.
+ */
+export async function loadReportData(): Promise<ReportData> {
+  const sb = getSupabase();
+  const [lk, { data: cycles }, { data: snapshots }, { data: profiles }] = await Promise.all([
+    loadLookups(),
+    sb.from("dev_cycle").select("id, user_id, current_year, snapshot_of_targets"),
+    sb.from("progress_snapshot").select("dev_cycle_id, cycle_year, competency_id, assessed_rank, target_rank, gap_size, gap_status"),
+    sb.from("profiles").select("id, full_name, email, department"),
+  ]);
+  const cyc = (cycles ?? []) as ReportData["cycles"];
+  const criticalByCompetency = new Set<string>();
+  for (const c of cyc) for (const t of c.snapshot_of_targets ?? []) if (t.isCritical) criticalByCompetency.add(t.competencyId);
+  return {
+    cycles: cyc,
+    snapshots: (snapshots ?? []) as Snapshot[],
+    profiles: (profiles ?? []) as ReportData["profiles"],
+    competencies: lk.competencies,
+    criticalByCompetency,
   };
 }
