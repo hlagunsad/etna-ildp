@@ -1,12 +1,106 @@
 @import "tailwindcss";
 
+/* ── Design tokens (Tailwind v4 @theme → bg-brand, text-ink, border-line, etc.) ── */
+@theme {
+  --color-bg: #faf8f2; /* warm parchment */
+  --color-surface: #ffffff;
+  --color-ink: #1c1b17; /* warm near-black */
+  --color-muted: #6f6c61;
+  --color-faint: #9a968a;
+  --color-line: #e8e3d7; /* hairline */
+  --color-chip: #f1efe7;
+
+  --color-brand: #0e4f3c; /* deep pine green */
+  --color-brand-700: #0a3b2d;
+  --color-brand-100: #d6e6df;
+  --color-brand-50: #edf4f0;
+
+  --color-amber: #9a5212;
+  --color-amber-50: #f8eede;
+  --color-danger: #b42318;
+  --color-danger-50: #fbeae8;
+  --color-success: #1a6a47;
+  --color-success-50: #e7f2ec;
+
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-public), ui-sans-serif, system-ui, sans-serif;
+}
+
 :root {
   color-scheme: light;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
 body {
-  background: #f6f7fb;
-  color: #0f172a;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100dvh;
+  /* a whisper of brand warmth, no heavy gradients */
+  background-image: radial-gradient(48rem 32rem at 108% -8%, rgba(14, 79, 60, 0.05), transparent 60%);
+  background-attachment: fixed;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* ── Accessibility ─────────────────────────────────────────────────────────── */
+
+/* A single, consistent, high-contrast focus ring for keyboard users. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.skip-link {
+  position: fixed;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 60;
+  transform: translateY(-200%);
+  background: var(--color-brand);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 0.6rem;
+  font-weight: 600;
+  transition: transform 0.18s ease;
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* Respect reduced-motion: kill non-essential animation. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Motion: a subtle, staggered page-load reveal ──────────────────────────── */
+@keyframes lb-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: lb-rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

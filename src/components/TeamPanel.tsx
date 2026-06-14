@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
+import { Card, PageHeader, Pill, Spinner } from "./ui";
 import type { Profile, Role } from "@/lib/types";
 import MemberDetail from "./MemberDetail";
 
 type Summary = { cycleYear: number | null; cycleStatus: string | null; tnaStatus: string | null; ildpStatus: string | null };
 
 export default function TeamPanel({ selfId, role }: { selfId: string; role: Role | null }) {
-  const [members, setMembers] = useState<Profile[]>([]);
+  const [members, setMembers] = useState<Profile[] | null>(null);
   const [statusById, setStatusById] = useState<Record<string, Summary>>({});
   const [selected, setSelected] = useState<Profile | null>(null);
 
@@ -41,32 +42,37 @@ export default function TeamPanel({ selfId, role }: { selfId: string; role: Role
   if (selected) {
     return <MemberDetail member={selected} role={role} selfId={selfId} onBack={() => { setSelected(null); load(); }} />;
   }
+  if (!members) return <Spinner />;
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900">My Team</h2>
-        <p className="text-sm text-slate-500">Your direct reports. Open a member to validate their TNA or endorse their plan.</p>
-      </div>
-      {members.length === 0 && <p className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">No direct reports.</p>}
-      <div className="grid gap-3 sm:grid-cols-2">
-        {members.map((m) => {
-          const s = statusById[m.id];
-          const needsAction = s?.tnaStatus === "submitted" || s?.ildpStatus === "pending_endorsement";
-          return (
-            <button key={m.id} onClick={() => setSelected(m)} className="rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-sky-300 hover:shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-800">{m.full_name ?? m.email}</span>
-                {needsAction && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">Action needed</span>}
-              </div>
-              <p className="mt-0.5 text-xs text-slate-500">{m.department}</p>
-              <p className="mt-2 text-xs text-slate-500">
-                Cycle: {s?.cycleYear ? `Y${s.cycleYear} ${s.cycleStatus}` : "—"} · TNA: {s?.tnaStatus ?? "—"} · ILDP: {s?.ildpStatus ?? "—"}
-              </p>
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <>
+      <PageHeader title="My Team" subtitle="Your direct reports. Open a member to validate their TNA or endorse their plan." />
+      {members.length === 0 ? (
+        <Card className="p-6 text-sm text-muted">No direct reports.</Card>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {members.map((m) => {
+            const s = statusById[m.id];
+            const needsAction = s?.tnaStatus === "submitted" || s?.ildpStatus === "pending_endorsement";
+            return (
+              <button
+                key={m.id}
+                onClick={() => setSelected(m)}
+                className="rounded-2xl border border-line bg-surface p-4 text-left shadow-[0_1px_2px_rgba(28,27,23,0.04)] transition hover:border-brand-100 hover:shadow-[0_10px_30px_-18px_rgba(28,27,23,0.25)]"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-ink">{m.full_name ?? m.email}</span>
+                  {needsAction && <Pill tone="warn">Action needed</Pill>}
+                </div>
+                <p className="mt-0.5 text-xs text-muted">{m.department}</p>
+                <p className="mt-2 text-xs text-muted">
+                  Cycle {s?.cycleYear ? `Y${s.cycleYear} · ${s.cycleStatus}` : "—"} · TNA {s?.tnaStatus ?? "—"} · ILDP {s?.ildpStatus ?? "—"}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }

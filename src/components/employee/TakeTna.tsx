@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { loadBoard, loadLookups } from "@/lib/queries";
 import { apiPost } from "@/lib/api";
+import { Button, Card, EmptyState, PageHeader } from "../ui";
 import type { Competency, DevCycle, Level, Tna } from "@/lib/types";
 
 type Item = { id: string; prompt_text: string; levelRank: number };
@@ -36,11 +37,7 @@ export default function TakeTna({ userId }: { userId: string }) {
     const grouped: Record<string, Item[]> = {};
     for (const it of items ?? []) {
       if (!snapIds.includes(it.competency_id)) continue;
-      (grouped[it.competency_id] ??= []).push({
-        id: it.id,
-        prompt_text: it.prompt_text,
-        levelRank: rankByLevel[it.level_id ?? ""] ?? 0,
-      });
+      (grouped[it.competency_id] ??= []).push({ id: it.id, prompt_text: it.prompt_text, levelRank: rankByLevel[it.level_id ?? ""] ?? 0 });
     }
     for (const cid of Object.keys(grouped)) grouped[cid].sort((a, b) => a.levelRank - b.levelRank);
     setItemsByComp(grouped);
@@ -99,75 +96,76 @@ export default function TakeTna({ userId }: { userId: string }) {
 
   if (!cycle) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
-        <h2 className="text-lg font-semibold text-slate-900">Start your baseline TNA</h2>
-        <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">This locks your target levels for the 3-year cycle and opens your first self-assessment.</p>
-        <button onClick={startBaseline} disabled={busy} className="mt-4 rounded-lg bg-sky-600 px-5 py-2.5 font-semibold text-white hover:bg-sky-700 disabled:opacity-60">
-          {busy ? "Starting…" : "Start baseline TNA"}
-        </button>
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-      </div>
+      <EmptyState title="Start your baseline TNA">
+        <p>This locks your target levels for the 3-year cycle and opens your first self-assessment.</p>
+        <div className="mt-4">
+          <Button onClick={startBaseline} disabled={busy}>{busy ? "Starting…" : "Start baseline TNA"}</Button>
+        </div>
+        {error && <p role="alert" className="mt-3 text-sm text-danger">{error}</p>}
+      </EmptyState>
     );
   }
 
   if (!tna || tna.status === "submitted" || tna.status === "validated" || tna.status === "finalized") {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-600">
+      <Card className="p-8 text-center text-sm text-muted">
         {tna?.status === "submitted" && "Your TNA is submitted and awaiting validation by your supervisor."}
         {(tna?.status === "validated" || tna?.status === "finalized") && `Your Year ${tna.cycle_year} TNA is validated. Check My Development for your gaps.`}
         {!tna && "No open TNA for this year yet."}
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900">Training Needs Analysis — Year {tna.cycle_year}</h2>
-        <p className="text-sm text-slate-500">Check every statement you can already do. Your proficiency level for each competency is worked out from your answers.</p>
+    <>
+      <PageHeader
+        title={`Training Needs Analysis — Year ${tna.cycle_year}`}
+        subtitle="Check every statement you can already do. Your level for each competency is worked out from your answers."
+      />
+
+      <div className="space-y-4">
+        {comps.map((c) => {
+          const items = itemsByComp[c.id] ?? [];
+          return (
+            <Card key={c.id} data-testid="tna-comp" data-comp-id={c.id} className="p-5 sm:p-6">
+              <h2 className="font-display text-lg font-semibold text-ink">{c.name}</h2>
+              {[1, 2, 3].map((rank) => {
+                const levelItems = items.filter((it) => it.levelRank === rank);
+                if (levelItems.length === 0) return null;
+                const label = levels.find((l) => l.rank === rank)?.label ?? "";
+                return (
+                  <fieldset key={rank} className="mt-4">
+                    <legend className="text-[11px] font-semibold uppercase tracking-wide text-faint">{label}</legend>
+                    <div className="mt-1.5 space-y-1">
+                      {levelItems.map((it) => (
+                        <label key={it.id} className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl px-2 py-1.5 text-sm text-ink hover:bg-brand-50">
+                          <input
+                            type="checkbox"
+                            data-testid="tna-item"
+                            data-comp-id={c.id}
+                            data-level={rank}
+                            checked={checked.has(it.id)}
+                            onChange={() => toggle(it.id)}
+                            className="mt-0.5 h-5 w-5 shrink-0 rounded border-line accent-brand"
+                          />
+                          <span>{it.prompt_text}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                );
+              })}
+            </Card>
+          );
+        })}
       </div>
 
-      {comps.map((c) => {
-        const items = itemsByComp[c.id] ?? [];
-        return (
-          <div key={c.id} data-testid="tna-comp" data-comp-id={c.id} className="rounded-2xl border border-slate-200 bg-white p-5">
-            <h3 className="font-display font-semibold text-slate-800">{c.name}</h3>
-            {[1, 2, 3].map((rank) => {
-              const levelItems = items.filter((it) => it.levelRank === rank);
-              if (levelItems.length === 0) return null;
-              const label = levels.find((l) => l.rank === rank)?.label ?? "";
-              return (
-                <div key={rank} className="mt-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                  <div className="mt-1.5 space-y-1.5">
-                    {levelItems.map((it) => (
-                      <label key={it.id} className="flex items-start gap-2.5 text-sm text-slate-700">
-                        <input
-                          type="checkbox"
-                          data-testid="tna-item"
-                          data-comp-id={c.id}
-                          data-level={rank}
-                          checked={checked.has(it.id)}
-                          onChange={() => toggle(it.id)}
-                          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-200"
-                        />
-                        <span>{it.prompt_text}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        );
-      })}
-
-      <div className="flex items-center gap-3">
-        <button onClick={() => persist(false)} disabled={busy} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60">Save draft</button>
-        <button onClick={() => persist(true)} disabled={busy} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-60">Submit for validation</button>
-        {msg && <span className="text-sm text-emerald-600">{msg}</span>}
-        {error && <span className="text-sm text-red-600">{error}</span>}
+      <div className="sticky bottom-0 z-10 -mx-4 mt-4 flex flex-wrap items-center gap-3 border-t border-line bg-bg/90 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
+        <Button variant="secondary" onClick={() => persist(false)} disabled={busy}>Save draft</Button>
+        <Button onClick={() => persist(true)} disabled={busy}>Submit for validation</Button>
+        {msg && <span className="text-sm font-medium text-success" role="status">{msg}</span>}
+        {error && <span className="text-sm text-danger" role="alert">{error}</span>}
       </div>
-    </div>
+    </>
   );
 }

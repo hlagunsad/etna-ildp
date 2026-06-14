@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { loadLookups } from "@/lib/queries";
+import { Button, Card, PageHeader, Spinner } from "./ui";
 
 type Rollup = { name: string; count: number; totalPriority: number };
 
 export default function OrgPanel() {
+  const [ready, setReady] = useState(false);
   const [rollup, setRollup] = useState<Rollup[]>([]);
   const [stats, setStats] = useState({ cycles: 0, validated: 0, passed: 0 });
   const [pending, setPending] = useState<{ id: string; user: string }[]>([]);
@@ -49,6 +51,7 @@ export default function OrgPanel() {
       : { data: [] as { id: string; user_id: string }[] };
     const userByCycle = Object.fromEntries((pcycles ?? []).map((c) => [c.id, c.user_id]));
     setPending((pendingIldp ?? []).map((i) => ({ id: i.id, user: nameById[userByCycle[i.dev_cycle_id]] ?? "—" })));
+    setReady(true);
   }, []);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch on mount; setState runs after the awaited load, not a synchronous cascade
@@ -62,54 +65,72 @@ export default function OrgPanel() {
     setBusy(false);
   }
 
+  if (!ready) return <Spinner />;
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900">Organization</h2>
-        <p className="text-sm text-slate-500">Org-wide training-needs rollup and the final ILDP approval queue.</p>
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        <Stat label="Cycles" value={stats.cycles} />
-        <Stat label="Validated TNAs" value={stats.validated} />
-        <Stat label="Cycles passed" value={stats.passed} />
-      </div>
+    <>
+      <PageHeader title="Organization" subtitle="Org-wide training-needs rollup and the final ILDP approval queue." />
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">Most-gapped competencies (who to train, on what)</h3>
-        {rollup.length === 0 ? (
-          <p className="text-sm text-slate-400">No open gaps across the org.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead><tr className="text-left text-xs uppercase text-slate-400"><th className="pb-2">Competency</th><th className="pb-2">People with a gap</th><th className="pb-2">Total priority</th></tr></thead>
-            <tbody>{rollup.map((r) => (<tr key={r.name} className="border-t border-slate-100"><td className="py-2 font-medium text-slate-800">{r.name}</td><td className="py-2 text-slate-600">{r.count}</td><td className="py-2 text-slate-600">{r.totalPriority}</td></tr>))}</tbody>
-          </table>
-        )}
-      </section>
+      <div className="space-y-6">
+        <div className="grid grid-cols-3 gap-3">
+          <Stat label="Cycles" value={stats.cycles} />
+          <Stat label="Validated TNAs" value={stats.validated} />
+          <Stat label="Cycles passed" value={stats.passed} />
+        </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">ILDP approval queue</h3>
-        {pending.length === 0 ? (
-          <p className="text-sm text-slate-400">Nothing awaiting final approval.</p>
-        ) : (
-          <ul className="space-y-2">
-            {pending.map((p) => (
-              <li key={p.id} className="flex items-center justify-between text-sm">
-                <span className="text-slate-700">{p.user}</span>
-                <button onClick={() => approve(p.id)} disabled={busy} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">Approve</button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+        <Card className="p-5 sm:p-6">
+          <h2 className="mb-3 text-sm font-semibold text-muted">Most-gapped competencies — who to train, on what</h2>
+          {rollup.length === 0 ? (
+            <p className="text-sm text-muted">No open gaps across the org.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[26rem] text-sm">
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-wide text-faint">
+                    <th scope="col" className="pb-2 font-medium">Competency</th>
+                    <th scope="col" className="pb-2 font-medium">People with a gap</th>
+                    <th scope="col" className="pb-2 font-medium">Total priority</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rollup.map((r) => (
+                    <tr key={r.name} className="border-t border-line">
+                      <td className="py-2.5 font-medium text-ink">{r.name}</td>
+                      <td className="py-2.5 tabular-nums text-muted">{r.count}</td>
+                      <td className="py-2.5 tabular-nums text-muted">{r.totalPriority}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        <Card className="p-5 sm:p-6">
+          <h2 className="mb-3 text-sm font-semibold text-muted">ILDP approval queue</h2>
+          {pending.length === 0 ? (
+            <p className="text-sm text-muted">Nothing awaiting final approval.</p>
+          ) : (
+            <ul className="divide-y divide-line">
+              {pending.map((p) => (
+                <li key={p.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <span className="text-ink">{p.user}</span>
+                  <Button size="sm" onClick={() => approve(p.id)} disabled={busy}>Approve</Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+    </>
   );
 }
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <p className="text-2xl font-bold text-slate-900">{value}</p>
-      <p className="text-xs text-slate-500">{label}</p>
-    </div>
+    <Card className="p-4">
+      <p className="font-display text-2xl font-semibold tabular-nums text-ink">{value}</p>
+      <p className="text-xs text-muted">{label}</p>
+    </Card>
   );
 }

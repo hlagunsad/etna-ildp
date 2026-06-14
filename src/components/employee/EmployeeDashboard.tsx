@@ -4,10 +4,15 @@ import { useCallback, useEffect, useState } from "react";
 import { loadBoard, loadLookups, type Board } from "@/lib/queries";
 import { cycleReadiness } from "@/lib/readiness";
 import { apiPost } from "@/lib/api";
-import { GAP_CLASS, GAP_LABEL, READINESS_CLASS, READINESS_LABEL } from "@/lib/labels";
+import { GAP_LABEL, GAP_TONE, READINESS_LABEL, READINESS_TONE } from "@/lib/labels";
+import { Button, Card, EmptyState, PageHeader, Pill, Spinner } from "../ui";
 import type { Competency, Readiness } from "@/lib/types";
 
-export default function EmployeeDashboard({ userId, self }: { userId: string; self?: boolean }) {
+function rankLabel(rank: number | undefined): string {
+  return rank === 1 ? "Basic" : rank === 2 ? "Intermediate" : rank === 3 ? "Advanced" : "—";
+}
+
+export default function EmployeeDashboard({ userId, self, embedded }: { userId: string; self?: boolean; embedded?: boolean }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [comps, setComps] = useState<Record<string, Competency>>({});
   const [rankByLevel, setRankByLevel] = useState<Record<string, number>>({});
@@ -31,24 +36,23 @@ export default function EmployeeDashboard({ userId, self }: { userId: string; se
     setBusy(false);
   }
 
-  if (!board) return <p className="text-sm text-slate-400">Loading…</p>;
+  if (!board) return <Spinner />;
 
   if (!board.cycle) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
-        <h2 className="text-lg font-semibold text-slate-900">No development cycle yet</h2>
-        <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
+      <EmptyState title="No development cycle yet">
+        <p>
           {self
             ? "Start your baseline Training Needs Analysis to measure your current levels against your role's targets and generate your plan."
             : "This person has not started their baseline TNA yet."}
         </p>
         {self && (
-          <button onClick={startBaseline} disabled={busy} className="mt-4 rounded-lg bg-sky-600 px-5 py-2.5 font-semibold text-white hover:bg-sky-700 disabled:opacity-60">
-            {busy ? "Starting…" : "Start baseline TNA"}
-          </button>
+          <div className="mt-4">
+            <Button onClick={startBaseline} disabled={busy}>{busy ? "Starting…" : "Start baseline TNA"}</Button>
+          </div>
         )}
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-      </div>
+        {error && <p role="alert" className="mt-3 text-sm text-danger">{error}</p>}
+      </EmptyState>
     );
   }
 
@@ -59,84 +63,76 @@ export default function EmployeeDashboard({ userId, self }: { userId: string; se
   });
   const sortedItems = [...board.items].sort((a, b) => b.priority - a.priority);
 
-  // Trend: competency → { year → assessedRank }.
   const byComp: Record<string, Record<number, number | null>> = {};
-  for (const s of board.snapshots) {
-    (byComp[s.competency_id] ??= {})[s.cycle_year] = s.assessed_rank;
-  }
+  for (const s of board.snapshots) (byComp[s.competency_id] ??= {})[s.cycle_year] = s.assessed_rank;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">My Development</h2>
-          <p className="text-sm text-slate-500">
-            Cycle year {board.cycle.current_year} of 3 · plan status{" "}
-            <span className="font-medium text-slate-700">{board.ildp?.status ?? "—"}</span>
-          </p>
+    <>
+      {embedded ? (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-muted">Cycle year {board.cycle.current_year} of 3 · plan {board.ildp?.status ?? "—"}</p>
+          <Pill tone={READINESS_TONE[readiness]}>{READINESS_LABEL[readiness]}</Pill>
         </div>
-        <span className={`ml-auto rounded-full px-3 py-1 text-sm font-semibold ring-1 ${READINESS_CLASS[readiness]}`}>
-          {READINESS_LABEL[readiness]}
-        </span>
-      </div>
+      ) : (
+        <PageHeader
+          title="My Development"
+          subtitle={`Cycle year ${board.cycle.current_year} of 3 · plan ${board.ildp?.status ?? "—"}`}
+          actions={<Pill tone={READINESS_TONE[readiness]}>{READINESS_LABEL[readiness]}</Pill>}
+        />
+      )}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">Competency gaps (by priority)</h3>
-        {sortedItems.length === 0 ? (
-          <p className="text-sm text-slate-400">No plan items yet — complete and validate your TNA.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-slate-400">
-                <th className="pb-2">Competency</th><th className="pb-2">Current → Target</th>
-                <th className="pb-2">Gap</th><th className="pb-2">Priority</th><th className="pb-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
+      <div className="space-y-5">
+        <Card className="p-5 sm:p-6">
+          <h2 className="mb-3 text-sm font-semibold text-muted">Competency gaps, by priority</h2>
+          {sortedItems.length === 0 ? (
+            <p className="text-sm text-muted">No plan items yet — complete and validate your TNA.</p>
+          ) : (
+            <ul className="divide-y divide-line">
               {sortedItems.map((i) => (
-                <tr key={i.id} className="border-t border-slate-100">
-                  <td className="py-2 font-medium text-slate-800">
-                    {comps[i.competency_id]?.name ?? "—"}
-                    {criticalSet.has(i.competency_id) && <span className="ml-2 rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-600">CRITICAL</span>}
-                  </td>
-                  <td className="py-2 text-slate-600">
-                    {rankLabel(rankByLevel[i.current_level_id ?? ""])} → {rankLabel(rankByLevel[i.target_level_id ?? ""])}
-                  </td>
-                  <td className="py-2 text-slate-600">{i.gap_size}</td>
-                  <td className="py-2 text-slate-600">{i.priority}</td>
-                  <td className="py-2"><span className={`rounded px-2 py-0.5 text-xs font-medium ${GAP_CLASS[i.gap_status]}`}>{GAP_LABEL[i.gap_status]}</span></td>
-                </tr>
+                <li key={i.id} className="flex flex-wrap items-center gap-x-4 gap-y-1.5 py-3 first:pt-0 last:pb-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="flex items-center gap-2 font-medium text-ink">
+                      <span className="truncate">{comps[i.competency_id]?.name ?? "—"}</span>
+                      {criticalSet.has(i.competency_id) && <Pill tone="danger">Critical</Pill>}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted">
+                      {rankLabel(rankByLevel[i.current_level_id ?? ""])} → {rankLabel(rankByLevel[i.target_level_id ?? ""])}
+                    </p>
+                  </div>
+                  <span className="text-xs tabular-nums text-muted">Priority {i.priority}</span>
+                  <Pill tone={GAP_TONE[i.gap_status]}>{GAP_LABEL[i.gap_status]}</Pill>
+                </li>
               ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+            </ul>
+          )}
+        </Card>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">3-year trend (assessed level per year)</h3>
-        {Object.keys(byComp).length === 0 ? (
-          <p className="text-sm text-slate-400">A trend appears once at least one year is assessed.</p>
-        ) : (
-          <div className="space-y-2">
-            {Object.entries(byComp).map(([cid, years]) => (
-              <div key={cid} className="flex items-center gap-3 text-sm">
-                <span className="w-56 shrink-0 truncate text-slate-700">{comps[cid]?.name ?? "—"}</span>
-                {[1, 2, 3].map((y) => (
-                  <span key={y} className="flex items-center gap-1">
-                    <span className="text-xs text-slate-400">Y{y}</span>
-                    <span className="inline-block h-2 rounded bg-sky-500" style={{ width: `${(years[y] ?? 0) * 18}px` }} />
-                    <span className="w-3 text-xs text-slate-500">{years[y] ?? "—"}</span>
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
+        <Card className="p-5 sm:p-6">
+          <h2 className="mb-3 text-sm font-semibold text-muted">3-year trend — assessed level per year</h2>
+          {Object.keys(byComp).length === 0 ? (
+            <p className="text-sm text-muted">A trend appears once at least one year is assessed.</p>
+          ) : (
+            <ul className="space-y-2.5">
+              {Object.entries(byComp).map(([cid, years]) => (
+                <li key={cid} className="grid grid-cols-1 gap-1.5 sm:grid-cols-[13rem_1fr] sm:items-center sm:gap-3">
+                  <span className="truncate text-sm text-ink">{comps[cid]?.name ?? "—"}</span>
+                  <div className="flex items-center gap-3">
+                    {[1, 2, 3].map((y) => (
+                      <span key={y} className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-semibold text-faint">Y{y}</span>
+                        <span aria-hidden className="h-2 w-12 overflow-hidden rounded-full bg-chip sm:w-16">
+                          <span className="block h-full rounded-full bg-brand" style={{ width: `${((years[y] ?? 0) / 3) * 100}%` }} />
+                        </span>
+                        <span className="w-3 text-xs tabular-nums text-muted">{years[y] ?? "—"}</span>
+                      </span>
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+    </>
   );
-}
-
-function rankLabel(rank: number | undefined): string {
-  return rank === 1 ? "Basic" : rank === 2 ? "Intermediate" : rank === 3 ? "Advanced" : "—";
 }

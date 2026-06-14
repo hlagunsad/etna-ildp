@@ -1,5 +1,23 @@
 import type { GapStatus, Readiness } from "./types";
 
+type Tone = "neutral" | "brand" | "success" | "warn" | "danger" | "info";
+
+export const GAP_TONE: Record<GapStatus, Tone> = {
+  open: "neutral",
+  improving: "info",
+  stalled: "warn",
+  regressed: "danger",
+  closed: "success",
+  new: "brand",
+  retargeted: "brand",
+};
+
+export const READINESS_TONE: Record<Readiness, Tone> = {
+  on_track: "success",
+  at_risk: "warn",
+  behind: "danger",
+};
+
 export const READINESS_LABEL: Record<Readiness, string> = {
   on_track: "On Track",
   at_risk: "At Risk",

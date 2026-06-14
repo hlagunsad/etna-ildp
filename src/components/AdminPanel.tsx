@@ -4,20 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { apiPost } from "@/lib/api";
 import { ROLE_LABEL } from "@/lib/labels";
+import { Button, Card, Field, PageHeader, Pill, inputClass } from "./ui";
 import type { Profile, Role } from "@/lib/types";
 
 type Audit = { id: string; actor_email: string | null; action: string; entity_type: string; created_at: string };
 type JobRole = { id: string; name: string };
 
-const EMPTY_FORM = {
-  full_name: "",
-  email: "",
-  password: "",
-  role: "employee",
-  department: "",
-  job_role_id: "",
-  manager_id: "",
-};
+const EMPTY_FORM = { full_name: "", email: "", password: "", role: "employee", department: "", job_role_id: "", manager_id: "" };
 
 export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role: Role | null }) {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -54,9 +47,7 @@ export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role
 
   async function createUser(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setError(null);
-    setMsg(null);
+    setBusy(true); setError(null); setMsg(null);
     try {
       await apiPost("/api/users/create", form);
       setMsg(`Created ${form.email} — they can sign in now with the temporary password.`);
@@ -68,77 +59,91 @@ export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role
     setBusy(false);
   }
 
-  const inputCls = "w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100";
-
   return (
-    <div className="space-y-6">
-      {canUsers && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h3 className="mb-1 text-sm font-semibold text-slate-700">Create user account</h3>
-          <p className="mb-4 text-xs text-slate-400">
-            No public sign-up — accounts are created here (HR cannot create admins). In production this sends an
-            invitation email; here, share the temporary password directly.
-          </p>
-          <form onSubmit={createUser} className="grid gap-3 sm:grid-cols-2">
-            <input className={inputCls} placeholder="Full name" value={form.full_name} onChange={(e) => set("full_name", e.target.value)} />
-            <input className={inputCls} type="email" required placeholder="Email" value={form.email} onChange={(e) => set("email", e.target.value)} />
-            <input className={inputCls} required placeholder="Temporary password (min 8)" value={form.password} onChange={(e) => set("password", e.target.value)} />
-            <select className={inputCls} value={form.role} onChange={(e) => set("role", e.target.value)} aria-label="Role">
-              {roleOptions.map(([v, l]) => (<option key={v} value={v}>{l}</option>))}
-            </select>
-            <input className={inputCls} placeholder="Department" value={form.department} onChange={(e) => set("department", e.target.value)} />
-            <select className={inputCls} value={form.job_role_id} onChange={(e) => set("job_role_id", e.target.value)} aria-label="Job role">
-              <option value="">— Job role —</option>
-              {jobRoles.map((jr) => (<option key={jr.id} value={jr.id}>{jr.name}</option>))}
-            </select>
-            <select className={inputCls} value={form.manager_id} onChange={(e) => set("manager_id", e.target.value)} aria-label="Manager">
-              <option value="">— Manager —</option>
-              {profiles.map((p) => (<option key={p.id} value={p.id}>{p.full_name ?? p.email}</option>))}
-            </select>
-            <div className="flex items-center gap-3 sm:col-span-2">
-              <button type="submit" disabled={busy} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-60">
-                {busy ? "Creating…" : "Create account"}
-              </button>
-              {msg && <span className="text-sm text-emerald-600">{msg}</span>}
-              {error && <span className="text-sm text-red-600">{error}</span>}
-            </div>
-          </form>
-        </section>
-      )}
+    <>
+      <PageHeader title="Administration" subtitle="User accounts and the immutable audit log." />
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">User accounts ({profiles.length})</h3>
-        <table className="w-full text-sm">
-          <thead><tr className="text-left text-xs uppercase text-slate-400"><th className="pb-2">Name</th><th className="pb-2">Email</th><th className="pb-2">Role</th><th className="pb-2">Dept</th></tr></thead>
-          <tbody>{profiles.map((p) => (
-            <tr key={p.id} className="border-t border-slate-100">
-              <td className="py-2 font-medium text-slate-800">{p.full_name ?? "—"}</td>
-              <td className="py-2 text-slate-600">{p.email}</td>
-              <td className="py-2"><span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{ROLE_LABEL[p.role]}</span></td>
-              <td className="py-2 text-slate-600">{p.department}</td>
-            </tr>
-          ))}</tbody>
-        </table>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">Audit log (immutable)</h3>
-        {audit.length === 0 ? (
-          <p className="text-sm text-slate-400">No audit entries yet.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead><tr className="text-left text-xs uppercase text-slate-400"><th className="pb-2">When</th><th className="pb-2">Actor</th><th className="pb-2">Action</th><th className="pb-2">Entity</th></tr></thead>
-            <tbody>{audit.map((a) => (
-              <tr key={a.id} className="border-t border-slate-100">
-                <td className="py-2 text-slate-500">{new Date(a.created_at).toLocaleString()}</td>
-                <td className="py-2 text-slate-600">{a.actor_email}</td>
-                <td className="py-2"><span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{a.action}</span></td>
-                <td className="py-2 text-slate-600">{a.entity_type}</td>
-              </tr>
-            ))}</tbody>
-          </table>
+      <div className="space-y-6">
+        {canUsers && (
+          <Card className="p-5 sm:p-6">
+            <h2 className="text-sm font-semibold text-ink">Create user account</h2>
+            <p className="mb-5 mt-1 text-xs text-muted">
+              No public sign-up — accounts are created here (HR cannot create admins). In production this sends an
+              invitation email; here, share the temporary password directly.
+            </p>
+            <form onSubmit={createUser} className="grid gap-4 sm:grid-cols-2">
+              <Field label="Full name" htmlFor="cu-name"><input id="cu-name" className={inputClass} value={form.full_name} onChange={(e) => set("full_name", e.target.value)} /></Field>
+              <Field label="Email" htmlFor="cu-email"><input id="cu-email" type="email" autoComplete="off" required className={inputClass} value={form.email} onChange={(e) => set("email", e.target.value)} /></Field>
+              <Field label="Temporary password" htmlFor="cu-pw" hint="Minimum 8 characters"><input id="cu-pw" required className={inputClass} value={form.password} onChange={(e) => set("password", e.target.value)} /></Field>
+              <Field label="Role" htmlFor="cu-role"><select id="cu-role" className={inputClass} value={form.role} onChange={(e) => set("role", e.target.value)}>{roleOptions.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
+              <Field label="Department" htmlFor="cu-dept"><input id="cu-dept" className={inputClass} value={form.department} onChange={(e) => set("department", e.target.value)} /></Field>
+              <Field label="Job role" htmlFor="cu-jr"><select id="cu-jr" className={inputClass} value={form.job_role_id} onChange={(e) => set("job_role_id", e.target.value)}><option value="">— Job role —</option>{jobRoles.map((jr) => <option key={jr.id} value={jr.id}>{jr.name}</option>)}</select></Field>
+              <Field label="Manager" htmlFor="cu-mgr"><select id="cu-mgr" className={inputClass} value={form.manager_id} onChange={(e) => set("manager_id", e.target.value)}><option value="">— Manager —</option>{profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name ?? p.email}</option>)}</select></Field>
+              <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+                <Button type="submit" disabled={busy}>{busy ? "Creating…" : "Create account"}</Button>
+                {msg && <span role="status" className="text-sm font-medium text-success">{msg}</span>}
+                {error && <span role="alert" className="text-sm text-danger">{error}</span>}
+              </div>
+            </form>
+          </Card>
         )}
-      </section>
-    </div>
+
+        <Card className="p-5 sm:p-6">
+          <h2 className="mb-3 text-sm font-semibold text-muted">User accounts ({profiles.length})</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[34rem] text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wide text-faint">
+                  <th scope="col" className="pb-2 font-medium">Name</th>
+                  <th scope="col" className="pb-2 font-medium">Email</th>
+                  <th scope="col" className="pb-2 font-medium">Role</th>
+                  <th scope="col" className="pb-2 font-medium">Dept</th>
+                </tr>
+              </thead>
+              <tbody>
+                {profiles.map((p) => (
+                  <tr key={p.id} className="border-t border-line">
+                    <td className="py-2.5 font-medium text-ink">{p.full_name ?? "—"}</td>
+                    <td className="py-2.5 text-muted">{p.email}</td>
+                    <td className="py-2.5"><Pill tone="neutral">{ROLE_LABEL[p.role]}</Pill></td>
+                    <td className="py-2.5 text-muted">{p.department}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        <Card className="p-5 sm:p-6">
+          <h2 className="mb-3 text-sm font-semibold text-muted">Audit log (immutable)</h2>
+          {audit.length === 0 ? (
+            <p className="text-sm text-muted">No audit entries yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[34rem] text-sm">
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-wide text-faint">
+                    <th scope="col" className="pb-2 font-medium">When</th>
+                    <th scope="col" className="pb-2 font-medium">Actor</th>
+                    <th scope="col" className="pb-2 font-medium">Action</th>
+                    <th scope="col" className="pb-2 font-medium">Entity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {audit.map((a) => (
+                    <tr key={a.id} className="border-t border-line">
+                      <td className="py-2.5 text-muted">{new Date(a.created_at).toLocaleString()}</td>
+                      <td className="py-2.5 text-muted">{a.actor_email}</td>
+                      <td className="py-2.5"><Pill tone="neutral">{a.action}</Pill></td>
+                      <td className="py-2.5 text-muted">{a.entity_type}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      </div>
+    </>
   );
 }

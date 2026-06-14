@@ -3,12 +3,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { loadBoard, loadLookups, type Board } from "@/lib/queries";
-import { GAP_CLASS, GAP_LABEL } from "@/lib/labels";
+import { GAP_LABEL, GAP_TONE } from "@/lib/labels";
+import { Button, Card, EmptyState, PageHeader, Pill, Spinner } from "../ui";
 import type { Competency } from "@/lib/types";
 
 const CHAIN = ["draft", "pending_endorsement", "pending_approval", "active"];
 const CHAIN_LABEL: Record<string, string> = {
-  draft: "Draft", pending_endorsement: "Endorsement", pending_approval: "Approval", active: "Active",
+  draft: "Draft",
+  pending_endorsement: "Endorsement",
+  pending_approval: "Approval",
+  active: "Active",
 };
 
 export default function MyIldp({ userId, selfId }: { userId: string; selfId: string }) {
@@ -38,8 +42,8 @@ export default function MyIldp({ userId, selfId }: { userId: string; selfId: str
     setBusy(false);
   }
 
-  if (!board) return <p className="text-sm text-slate-400">Loading…</p>;
-  if (!board.ildp) return <p className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">No plan yet — complete and validate your TNA to generate one.</p>;
+  if (!board) return <Spinner />;
+  if (!board.ildp) return <EmptyState title="No plan yet"><p>Complete and validate your TNA to generate your plan.</p></EmptyState>;
 
   const status = board.ildp.status;
   const currentStep = CHAIN.indexOf(status);
@@ -47,50 +51,44 @@ export default function MyIldp({ userId, selfId }: { userId: string; selfId: str
   const sorted = [...board.items].sort((a, b) => b.priority - a.priority);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900">Individual Learning &amp; Development Plan</h2>
-        <p className="text-sm text-slate-500">Approval chain: employee acknowledges → supervisor endorses → HR approves.</p>
-      </div>
+    <>
+      <PageHeader title="Individual Learning & Development Plan" subtitle="Approval chain: employee acknowledges → supervisor endorses → HR approves." />
 
-      <div className="flex items-center gap-2">
-        {CHAIN.map((s, idx) => (
-          <span key={s} className="flex items-center gap-2">
-            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${idx <= currentStep ? "bg-sky-100 text-sky-700" : "bg-slate-100 text-slate-400"}`}>{CHAIN_LABEL[s]}</span>
-            {idx < CHAIN.length - 1 && <span className="text-slate-300">→</span>}
-          </span>
-        ))}
-      </div>
-
-      {isOwner && status === "draft" && (
-        <div className="flex items-center gap-3">
-          <button onClick={acknowledge} disabled={busy} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60">
-            {busy ? "Acknowledging…" : "Acknowledge plan"}
-          </button>
-          <span className="text-sm text-slate-500">Confirm you have reviewed your plan to send it for endorsement.</span>
-        </div>
-      )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs uppercase tracking-wide text-slate-400">
-              <th className="pb-2">Competency</th><th className="pb-2">Gap</th><th className="pb-2">Priority</th><th className="pb-2">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((i) => (
-              <tr key={i.id} className="border-t border-slate-100">
-                <td className="py-2 font-medium text-slate-800">{comps[i.competency_id]?.name ?? "—"}</td>
-                <td className="py-2 text-slate-600">{i.gap_size}</td>
-                <td className="py-2 text-slate-600">{i.priority}</td>
-                <td className="py-2"><span className={`rounded px-2 py-0.5 text-xs font-medium ${GAP_CLASS[i.gap_status]}`}>{GAP_LABEL[i.gap_status]}</span></td>
-              </tr>
+      <div className="space-y-5">
+        <Card className="p-5">
+          <ol className="flex flex-wrap items-center gap-x-2 gap-y-2">
+            {CHAIN.map((s, idx) => (
+              <li key={s} className="flex items-center gap-2">
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${idx <= currentStep ? "bg-brand-50 text-brand" : "bg-chip text-faint"}`}>
+                  {CHAIN_LABEL[s]}
+                </span>
+                {idx < CHAIN.length - 1 && <span aria-hidden className="text-faint">→</span>}
+              </li>
             ))}
-          </tbody>
-        </table>
-      </section>
-    </div>
+          </ol>
+        </Card>
+
+        {isOwner && status === "draft" && (
+          <Card className="flex flex-wrap items-center gap-3 p-5">
+            <Button onClick={acknowledge} disabled={busy}>{busy ? "Acknowledging…" : "Acknowledge plan"}</Button>
+            <span className="text-sm text-muted">Confirm you have reviewed your plan to send it for endorsement.</span>
+          </Card>
+        )}
+        {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+
+        <Card className="p-5 sm:p-6">
+          <h2 className="mb-3 text-sm font-semibold text-muted">Plan items</h2>
+          <ul className="divide-y divide-line">
+            {sorted.map((i) => (
+              <li key={i.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3 first:pt-0 last:pb-0">
+                <span className="min-w-0 flex-1 truncate font-medium text-ink">{comps[i.competency_id]?.name ?? "—"}</span>
+                <span className="text-xs tabular-nums text-muted">Gap {i.gap_size} · Priority {i.priority}</span>
+                <Pill tone={GAP_TONE[i.gap_status]}>{GAP_LABEL[i.gap_status]}</Pill>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </div>
+    </>
   );
 }

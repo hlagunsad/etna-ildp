@@ -5,12 +5,13 @@ import { getSupabase } from "@/lib/supabase";
 import { loadBoard, type Board } from "@/lib/queries";
 import { apiPost } from "@/lib/api";
 import { can } from "@/lib/permissions";
+import { Button, Card } from "./ui";
 import type { Profile, Role } from "@/lib/types";
 import EmployeeDashboard from "./employee/EmployeeDashboard";
 
-// A team member's detail with the management actions available to the caller. The actual
-// authorization + separation of duties are enforced server-side (RLS + the validate route);
-// these buttons just surface what the caller may do.
+// A team member's detail with the management actions available to the caller. Authorization +
+// separation of duties are enforced server-side (RLS + the validate route); these buttons just
+// surface what the caller may do.
 export default function MemberDetail({
   member,
   role,
@@ -70,33 +71,39 @@ export default function MemberDetail({
 
   return (
     <div className="space-y-5">
-      <button onClick={onBack} className="text-sm text-sky-600 hover:underline">← Back to team</button>
-      <div className="flex flex-wrap items-center gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">{member.full_name ?? member.email}</h2>
-          <p className="text-sm text-slate-500">{member.email} · {member.department}</p>
+      <button onClick={onBack} className="inline-flex min-h-9 items-center gap-1 text-sm font-medium text-brand hover:underline">
+        <span aria-hidden>←</span> Back to team
+      </button>
+
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-semibold text-ink">{member.full_name ?? member.email}</h1>
+          <p className="text-sm text-muted">{member.email} · {member.department}</p>
         </div>
-        <div className="ml-auto flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
           {notSelf && latestTna?.status === "submitted" && can(role, "validate_tna") && (
-            <button onClick={() => run(validateTna, "TNA validated — plan generated.")} disabled={busy} className="rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60">Validate TNA</button>
+            <Button onClick={() => run(validateTna, "TNA validated — plan generated.")} disabled={busy}>Validate TNA</Button>
           )}
           {notSelf && ildp?.status === "pending_endorsement" && can(role, "endorse_ildp") && (
-            <button onClick={() => run(endorse, "ILDP endorsed.")} disabled={busy} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">Endorse ILDP</button>
+            <Button onClick={() => run(endorse, "ILDP endorsed.")} disabled={busy}>Endorse ILDP</Button>
           )}
           {notSelf && ildp?.status === "pending_approval" && can(role, "approve_ildp") && (
-            <button onClick={() => run(approve, "ILDP approved — active.")} disabled={busy} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">Approve ILDP</button>
+            <Button onClick={() => run(approve, "ILDP approved — active.")} disabled={busy}>Approve ILDP</Button>
           )}
           {board?.cycle && can(role, "advance_year") && (
-            <button onClick={() => run(advanceYear, "Advanced to next year — new TNA opened.")} disabled={busy} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60">Advance year</button>
+            <Button variant="secondary" onClick={() => run(advanceYear, "Advanced to next year — new TNA opened.")} disabled={busy}>Advance year</Button>
           )}
         </div>
       </div>
-      {msg && <p className="text-sm text-emerald-600">{msg}</p>}
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+
+      {msg && <p role="status" className="text-sm font-medium text-success">{msg}</p>}
+      {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+
+      <Card className="px-4 py-2.5 text-xs text-muted">
         Cycle: {board?.cycle ? `Year ${board.cycle.current_year}, ${board.cycle.status}` : "none"} · TNA: {latestTna?.status ?? "none"} · ILDP: {ildp?.status ?? "none"}
-      </div>
-      <EmployeeDashboard key={refreshKey} userId={member.id} />
+      </Card>
+
+      <EmployeeDashboard key={refreshKey} userId={member.id} embedded />
     </div>
   );
 }

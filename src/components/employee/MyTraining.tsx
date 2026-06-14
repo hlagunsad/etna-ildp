@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { loadBoard, loadLookups } from "@/lib/queries";
+import { Button, Card, EmptyState, PageHeader, Pill } from "../ui";
 import type { Competency, IldpItem } from "@/lib/types";
 
 type Resource = { id: string; title: string; provider: string | null; url: string | null; competency_id: string | null };
@@ -46,39 +47,41 @@ export default function MyTraining({ userId }: { userId: string }) {
   }
 
   if (items.length === 0) {
-    return <p className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">No open development items — nothing to train right now.</p>;
+    return <EmptyState title="Nothing to train right now"><p>You have no open development items.</p></EmptyState>;
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900">My Training</h2>
-        <p className="text-sm text-slate-500">Free courses mapped to your open competency gaps. Mark progress; your supervisor verifies completion.</p>
+    <>
+      <PageHeader title="My Training" subtitle="Free courses mapped to your open competency gaps. Mark progress; your supervisor verifies completion." />
+
+      <div className="space-y-4">
+        {items.map((item) => {
+          const res = resources.filter((r) => r.competency_id === item.competency_id);
+          const rec = records.find((r) => r.ildp_item_id === item.id);
+          return (
+            <Card key={item.id} className="p-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-medium text-ink">{comps[item.competency_id]?.name ?? "—"}</p>
+                {rec && <Pill tone="brand">{rec.status}</Pill>}
+              </div>
+              <ul className="mt-3 space-y-2.5">
+                {res.length === 0 && <li className="text-sm text-muted">No mapped course yet.</li>}
+                {res.map((r) => (
+                  <li key={r.id} className="flex flex-wrap items-center gap-2.5 text-sm">
+                    <span className="text-ink">{r.title}</span>
+                    <Pill tone="neutral">{r.provider}</Pill>
+                    {r.url && <a href={r.url} target="_blank" rel="noreferrer" className="font-medium text-brand underline-offset-2 hover:underline">open ↗</a>}
+                    <span className="ml-auto flex gap-2">
+                      <Button variant="secondary" size="sm" onClick={() => logTraining(item, r.id, "in_progress")} disabled={busy}>Start</Button>
+                      <Button size="sm" onClick={() => logTraining(item, r.id, "completed")} disabled={busy}>Mark completed</Button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          );
+        })}
       </div>
-      {items.map((item) => {
-        const res = resources.filter((r) => r.competency_id === item.competency_id);
-        const rec = records.find((r) => r.ildp_item_id === item.id);
-        return (
-          <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-5">
-            <div className="flex items-center justify-between">
-              <p className="font-medium text-slate-800">{comps[item.competency_id]?.name ?? "—"}</p>
-              {rec && <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">{rec.status}</span>}
-            </div>
-            <ul className="mt-2 space-y-2">
-              {res.length === 0 && <li className="text-sm text-slate-400">No mapped course yet.</li>}
-              {res.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center gap-3 text-sm">
-                  <span className="text-slate-700">{r.title}</span>
-                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] uppercase text-slate-500">{r.provider}</span>
-                  {r.url && <a href={r.url} target="_blank" rel="noreferrer" className="text-sky-600 hover:underline">open ↗</a>}
-                  <button onClick={() => logTraining(item, r.id, "in_progress")} disabled={busy} className="ml-auto rounded border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50">Start</button>
-                  <button onClick={() => logTraining(item, r.id, "completed")} disabled={busy} className="rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white hover:bg-slate-700">Mark completed</button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      })}
-    </div>
+    </>
   );
 }
