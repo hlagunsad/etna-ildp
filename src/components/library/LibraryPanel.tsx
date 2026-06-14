@@ -7,6 +7,7 @@ import ItemEditor from "./ItemEditor";
 import JobRoleEditor from "./JobRoleEditor";
 import ScaleEditor from "./ScaleEditor";
 import TrainingEditor from "./TrainingEditor";
+import TrainingImport from "./TrainingImport";
 
 const TABS = [
   { key: "competencies", label: "Competencies" },
@@ -14,6 +15,7 @@ const TABS = [
   { key: "roles", label: "Job roles & targets" },
   { key: "training", label: "Training catalog" },
   { key: "items", label: "Assessment items" },
+  { key: "import", label: "Import" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -74,6 +76,7 @@ export default function LibraryPanel() {
         {active === "roles" && <JobRoleEditor />}
         {active === "training" && <TrainingEditor />}
         {active === "items" && <ItemEditor />}
+        {active === "import" && <TrainingImport />}
       </div>
     </>
   );

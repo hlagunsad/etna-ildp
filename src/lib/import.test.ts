@@ -1,0 +1,84 @@
+import { describe, it, expect } from "vitest";
+import { mapUserRow, mapTrainingRow } from "./import";
+import type { ProficiencyLevel } from "./types";
+
+const jobRoleIdByName = new Map([["analyst", "jr1"]]);
+
+describe("mapUserRow", () => {
+  it("maps a full valid row and carries the manager email", () => {
+    const r = mapUserRow(
+      { full_name: " Ann Lee ", email: "ann@x.com", role: "supervisor", department: " IT ", job_role: "Analyst", manager_email: "boss@x.com", password: "secret12" },
+      { jobRoleIdByName, callerRole: "hr_admin" },
+    );
+    expect(r).toEqual({
+      ok: true,
+      payload: { full_name: "Ann Lee", email: "ann@x.com", role: "supervisor", department: "IT", job_role_id: "jr1", password: "secret12" },
+      managerEmail: "boss@x.com",
+    });
+  });
+  it("defaults a blank role to employee and a blank job role to null", () => {
+    const r = mapUserRow({ email: "a@b.com", role: "", job_role: "" }, { jobRoleIdByName, callerRole: "super_admin" });
+    expect(r.ok && r.payload.role).toBe("employee");
+    expect(r.ok && r.payload.job_role_id).toBeNull();
+    expect(r.ok && r.payload.password).toBeUndefined();
+    expect(r.ok && r.managerEmail).toBeUndefined();
+  });
+  it("rejects a missing or malformed email", () => {
+    expect(mapUserRow({ email: "" }, { jobRoleIdByName, callerRole: "super_admin" })).toEqual({ ok: false, error: "Missing email" });
+    expect(mapUserRow({ email: "nope" }, { jobRoleIdByName, callerRole: "super_admin" }).ok).toBe(false);
+  });
+  it("rejects an invalid role", () => {
+    expect(mapUserRow({ email: "a@b.com", role: "boss" }, { jobRoleIdByName, callerRole: "super_admin" })).toEqual({ ok: false, error: "Invalid role: boss" });
+  });
+  it("blocks HR from creating admin accounts but lets super-admin do it", () => {
+    expect(mapUserRow({ email: "a@b.com", role: "hr_admin" }, { jobRoleIdByName, callerRole: "hr_admin" }).ok).toBe(false);
+    expect(mapUserRow({ email: "a@b.com", role: "super_admin" }, { jobRoleIdByName, callerRole: "hr_admin" }).ok).toBe(false);
+    expect(mapUserRow({ email: "a@b.com", role: "hr_admin" }, { jobRoleIdByName, callerRole: "super_admin" }).ok).toBe(true);
+  });
+  it("rejects an unknown job role and a too-short password and a bad manager email", () => {
+    expect(mapUserRow({ email: "a@b.com", job_role: "Wizard" }, { jobRoleIdByName, callerRole: "super_admin" })).toEqual({ ok: false, error: "Unknown job role: Wizard" });
+    expect(mapUserRow({ email: "a@b.com", password: "short" }, { jobRoleIdByName, callerRole: "super_admin" }).ok).toBe(false);
+    expect(mapUserRow({ email: "a@b.com", manager_email: "nope" }, { jobRoleIdByName, callerRole: "super_admin" }).ok).toBe(false);
+  });
+});
+
+const competencyByCode = new Map([["nics-cyber", { id: "c1", scale_id: "s1" }]]);
+const levels: ProficiencyLevel[] = [
+  { id: "l1", scale_id: "s1", rank: 1, label: "Basic" },
+  { id: "l2", scale_id: "s1", rank: 2, label: "Intermediate" },
+  { id: "lx", scale_id: "s2", rank: 1, label: "Foundational" },
+];
+
+describe("mapTrainingRow", () => {
+  it("maps a full valid row, resolving competency by code and level by label", () => {
+    const r = mapTrainingRow(
+      { title: " Sec 101 ", provider: "internal", url: " http://x ", competency_code: "NICS-CYBER", target_level: "Basic", mode: "online", cost: "100" },
+      { competencyByCode, levels },
+    );
+    expect(r).toEqual({
+      ok: true,
+      payload: { title: "Sec 101", provider: "internal", url: "http://x", competency_id: "c1", target_level_id: "l1", mode: "online", cost: 100 },
+    });
+  });
+  it("nulls blank optional fields and defaults blank cost to 0", () => {
+    const r = mapTrainingRow({ title: "X", provider: "", mode: "", cost: "", url: "", competency_code: "", target_level: "" }, { competencyByCode, levels });
+    expect(r).toEqual({ ok: true, payload: { title: "X", provider: null, url: null, competency_id: null, target_level_id: null, mode: null, cost: 0 } });
+  });
+  it("rejects missing title, bad provider/mode, and bad cost", () => {
+    expect(mapTrainingRow({ title: "" }, { competencyByCode, levels })).toEqual({ ok: false, error: "Missing title" });
+    expect(mapTrainingRow({ title: "X", provider: "youtube" }, { competencyByCode, levels }).ok).toBe(false);
+    expect(mapTrainingRow({ title: "X", mode: "telepathy" }, { competencyByCode, levels }).ok).toBe(false);
+    expect(mapTrainingRow({ title: "X", cost: "free" }, { competencyByCode, levels }).ok).toBe(false);
+    expect(mapTrainingRow({ title: "X", cost: "-5" }, { competencyByCode, levels }).ok).toBe(false);
+  });
+  it("rejects an unknown competency code", () => {
+    expect(mapTrainingRow({ title: "X", competency_code: "BOGUS" }, { competencyByCode, levels })).toEqual({ ok: false, error: "Unknown competency code: BOGUS" });
+  });
+  it("scopes the level to the competency's scale (a wrong-scale label errors)", () => {
+    // Foundational only exists in scale s2; the competency is on s1 → error.
+    expect(mapTrainingRow({ title: "X", competency_code: "NICS-CYBER", target_level: "Foundational" }, { competencyByCode, levels }).ok).toBe(false);
+    // Without a competency, any level label resolves against all scales.
+    const r = mapTrainingRow({ title: "X", target_level: "Foundational" }, { competencyByCode, levels });
+    expect(r.ok && r.payload.target_level_id).toBe("lx");
+  });
+});

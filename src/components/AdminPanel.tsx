@@ -6,6 +6,7 @@ import { apiPost } from "@/lib/api";
 import { ROLE_LABEL } from "@/lib/labels";
 import { Button, Card, Field, PageHeader, Pill, inputClass } from "./ui";
 import type { Profile, Role } from "@/lib/types";
+import CsvImport, { type RowResult } from "./import/CsvImport";
 
 type Audit = { id: string; actor_email: string | null; action: string; entity_type: string; created_at: string };
 type JobRole = { id: string; name: string };
@@ -88,6 +89,8 @@ export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role
           </Card>
         )}
 
+        {canUsers && <UsersImport onDone={load} />}
+
         <Card className="p-5 sm:p-6">
           <h2 className="mb-3 text-sm font-semibold text-muted">User accounts ({profiles.length})</h2>
           <div className="overflow-x-auto">
@@ -145,5 +148,23 @@ export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role
         </Card>
       </div>
     </>
+  );
+}
+
+function UsersImport({ onDone }: { onDone: () => Promise<void> }) {
+  async function importUsers(rows: Record<string, string>[]): Promise<RowResult[]> {
+    const res = await apiPost("/api/users/import", { rows });
+    await onDone();
+    return (res.results as RowResult[]) ?? [];
+  }
+  return (
+    <CsvImport
+      testId="users-import"
+      title="Import users (CSV)"
+      hint="Columns: full_name, email (required), role, department, job_role, manager_email, password. Leave password blank to auto-generate a temporary one (shown once in the results). A manager listed in the same file is linked after creation; existing emails are skipped."
+      templateHeaders={["full_name", "email", "role", "department", "job_role", "manager_email", "password"]}
+      sampleRow={["Jordan Cruz", "jordan.cruz@example.com", "employee", "IT", "", "supervisor@demo.test", ""]}
+      onImport={importUsers}
+    />
   );
 }

@@ -20,7 +20,7 @@ export type CrudResult = { ok: boolean; error: string | null };
 
 type AuditAction = "create" | "update";
 
-async function writeAudit(
+export async function writeAudit(
   action: AuditAction,
   entityType: string,
   entityId: string | null | undefined,

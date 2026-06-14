@@ -121,3 +121,24 @@ test("supervisor sees the team competency report with the heatmap", async ({ pag
   await expect(page.getByRole("button", { name: "Export CSV" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Print / PDF" })).toBeVisible();
 });
+
+test("HR bulk-imports training resources from a pasted CSV", async ({ page }) => {
+  await signIn(page, CREDS.hr);
+  await page.getByRole("button", { name: "Library" }).click();
+  await page.getByTestId("lib-tab-import").click();
+
+  const ts = Date.now();
+  const csv = [
+    "title,provider,url,competency_code,target_level,mode,cost",
+    `E2E Course Import-${ts}-1,internal,,,,online,0`,
+    `E2E Course Import-${ts}-2,external,,,,classroom,500`,
+  ].join("\n");
+  await page.getByLabel("paste CSV").fill(csv);
+  await page.getByRole("button", { name: "Preview" }).click();
+  await page.getByTestId("training-import-import-btn").click();
+  await expect(page.getByText("2 created")).toBeVisible();
+
+  // The imported rows show up in the Training catalog editor (titles cleaned by the afterAll above).
+  await page.getByTestId("lib-tab-training").click();
+  await expect(page.getByText(`E2E Course Import-${ts}-1`)).toBeVisible();
+});
