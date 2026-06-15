@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mapUserRow, mapTrainingRow } from "./import";
+import { mapUserRow, mapTrainingRow, mapCompetencyRow, mapItemRow } from "./import";
 import type { ProficiencyLevel } from "./types";
 
 const jobRoleIdByName = new Map([["analyst", "jr1"]]);
@@ -84,5 +84,56 @@ describe("mapTrainingRow", () => {
     // Without a competency, any level label resolves against all scales.
     const r = mapTrainingRow({ title: "X", target_level: "Foundational" }, { competencyByCode, levels });
     expect(r.ok && r.payload.target_level_id).toBe("lx");
+  });
+});
+
+const scaleIdByName = new Map([["nics", "scaleA"]]);
+
+describe("mapCompetencyRow", () => {
+  it("maps a full valid row, resolving scale by name and lower-casing comp_group", () => {
+    const r = mapCompetencyRow(
+      { code: " NICS-X ", name: " New Comp ", description: " desc ", category: " Cat ", comp_group: "Core", scale: "NICS" },
+      { scaleIdByName },
+    );
+    expect(r).toEqual({
+      ok: true,
+      payload: { code: "NICS-X", name: "New Comp", description: "desc", category: "Cat", comp_group: "core", scale_id: "scaleA" },
+    });
+  });
+  it("nulls blank optional fields", () => {
+    const r = mapCompetencyRow({ code: "C1", name: "N", scale: "NICS", description: "", category: "", comp_group: "" }, { scaleIdByName });
+    expect(r).toEqual({ ok: true, payload: { code: "C1", name: "N", description: null, category: null, comp_group: null, scale_id: "scaleA" } });
+  });
+  it("rejects missing code/name/scale, an unknown scale, and a bad comp_group", () => {
+    expect(mapCompetencyRow({ name: "N", scale: "NICS" }, { scaleIdByName })).toEqual({ ok: false, error: "Missing code" });
+    expect(mapCompetencyRow({ code: "C", scale: "NICS" }, { scaleIdByName }).ok).toBe(false);
+    expect(mapCompetencyRow({ code: "C", name: "N" }, { scaleIdByName })).toEqual({ ok: false, error: "Missing scale" });
+    expect(mapCompetencyRow({ code: "C", name: "N", scale: "Ghost" }, { scaleIdByName })).toEqual({ ok: false, error: "Unknown scale: Ghost" });
+    expect(mapCompetencyRow({ code: "C", name: "N", scale: "NICS", comp_group: "wizard" }, { scaleIdByName }).ok).toBe(false);
+  });
+});
+
+describe("mapItemRow", () => {
+  it("maps a full valid row, resolving competency by code and level by label (scoped to the scale)", () => {
+    const r = mapItemRow(
+      { competency_code: "NICS-CYBER", prompt_text: " Can I configure a firewall? ", level: "Basic", response_type: "yes_no" },
+      { competencyByCode, levels },
+    );
+    expect(r).toEqual({
+      ok: true,
+      payload: { competency_id: "c1", prompt_text: "Can I configure a firewall?", response_type: "yes_no", level_id: "l1" },
+    });
+  });
+  it("defaults response_type to yes_no and allows a blank level", () => {
+    const r = mapItemRow({ competency_code: "NICS-CYBER", prompt_text: "X" }, { competencyByCode, levels });
+    expect(r.ok && r.payload.response_type).toBe("yes_no");
+    expect(r.ok && r.payload.level_id).toBeNull();
+  });
+  it("rejects missing competency_code/prompt, unknown competency, a wrong-scale level, and a bad response_type", () => {
+    expect(mapItemRow({ prompt_text: "X" }, { competencyByCode, levels })).toEqual({ ok: false, error: "Missing competency_code" });
+    expect(mapItemRow({ competency_code: "NICS-CYBER" }, { competencyByCode, levels })).toEqual({ ok: false, error: "Missing prompt_text" });
+    expect(mapItemRow({ competency_code: "BOGUS", prompt_text: "X" }, { competencyByCode, levels })).toEqual({ ok: false, error: "Unknown competency code: BOGUS" });
+    expect(mapItemRow({ competency_code: "NICS-CYBER", prompt_text: "X", level: "Foundational" }, { competencyByCode, levels }).ok).toBe(false);
+    expect(mapItemRow({ competency_code: "NICS-CYBER", prompt_text: "X", response_type: "telepathy" }, { competencyByCode, levels }).ok).toBe(false);
   });
 });

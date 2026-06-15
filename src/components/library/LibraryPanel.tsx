@@ -3,7 +3,9 @@
 import { useRef, useState } from "react";
 import { PageHeader } from "../ui";
 import CompetencyEditor from "./CompetencyEditor";
+import CompetencyImport from "./CompetencyImport";
 import ItemEditor from "./ItemEditor";
+import ItemImport from "./ItemImport";
 import JobRoleEditor from "./JobRoleEditor";
 import OrgUnitEditor from "./OrgUnitEditor";
 import ScaleEditor from "./ScaleEditor";
@@ -79,7 +81,14 @@ export default function LibraryPanel() {
         {active === "training" && <TrainingEditor />}
         {active === "items" && <ItemEditor />}
         {active === "org_units" && <OrgUnitEditor />}
-        {active === "import" && <TrainingImport />}
+        {active === "import" && (
+          <div className="space-y-8">
+            <p className="text-sm text-muted">Bulk-load the framework from CSV. Import competencies first, then assessment items, then training — each step references the one before it.</p>
+            <CompetencyImport />
+            <ItemImport />
+            <TrainingImport />
+          </div>
+        )}
       </div>
     </>
   );

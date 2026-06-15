@@ -151,14 +151,44 @@ test("HR bulk-imports training resources from a pasted CSV", async ({ page }) =>
     `E2E Course Import-${ts}-1,internal,,,,online,0`,
     `E2E Course Import-${ts}-2,external,,,,classroom,500`,
   ].join("\n");
-  await page.getByLabel("paste CSV").fill(csv);
-  await page.getByRole("button", { name: "Preview" }).click();
-  await page.getByTestId("training-import-import-btn").click();
-  await expect(page.getByText("2 created")).toBeVisible();
+  const panel = page.getByTestId("training-import");
+  await panel.locator("textarea").fill(csv);
+  await panel.getByRole("button", { name: "Preview" }).click();
+  await panel.getByTestId("training-import-import-btn").click();
+  await expect(panel.getByText("2 created")).toBeVisible();
 
   // The imported rows show up in the Training catalog editor (titles cleaned by the afterAll above).
   await page.getByTestId("lib-tab-training").click();
   await expect(page.getByText(`E2E Course Import-${ts}-1`)).toBeVisible();
+});
+
+// Remove any competency a failed import test might leave behind.
+test.afterAll(async () => {
+  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  await admin.from("competency").delete().like("code", "E2E-COMP-%");
+});
+
+test("HR bulk-imports a competency from a pasted CSV", async ({ page }) => {
+  await signIn(page, CREDS.hr);
+  await page.getByRole("button", { name: "Library" }).click();
+  await page.getByTestId("lib-tab-import").click();
+
+  const code = `E2E-COMP-${Date.now()}`;
+  const csv = [
+    "code,name,description,category,comp_group,scale",
+    `${code},E2E Imported Competency,from a test,Core ICT,technical,DICT NICS 3-Tier`,
+  ].join("\n");
+  const panel = page.getByTestId("competency-import");
+  await panel.locator("textarea").fill(csv);
+  await panel.getByRole("button", { name: "Preview" }).click();
+  await panel.getByTestId("competency-import-import-btn").click();
+  await expect(panel.getByText("1 created")).toBeVisible();
+
+  // The imported competency shows up in the Competencies editor.
+  await page.getByTestId("lib-tab-competencies").click();
+  await expect(page.getByText(code)).toBeVisible();
 });
 
 test("HR manages org units, and the create-user form assigns them", async ({ page }) => {

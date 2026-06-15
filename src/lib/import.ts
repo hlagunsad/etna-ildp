@@ -1,6 +1,6 @@
 /** Pure row mappers for bulk CSV import. No I/O — all validation/branching lives here. */
 
-import { MODES, PROVIDERS, type ProficiencyLevel } from "./types";
+import { COMP_GROUPS, MODES, PROVIDERS, type ProficiencyLevel } from "./types";
 import { levelsForScale } from "./library";
 
 export type MapResult<P> = { ok: true; payload: P; managerEmail?: string } | { ok: false; error: string };
@@ -129,4 +129,84 @@ export function mapTrainingRow(
       cost,
     },
   };
+}
+
+export type CompetencyPayload = {
+  code: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  comp_group: string | null;
+  scale_id: string;
+};
+
+/** Validate a competency-CSV row, resolving the proficiency scale by name. */
+export function mapCompetencyRow(
+  row: Record<string, string>,
+  ctx: { scaleIdByName: Map<string, string> },
+): MapResult<CompetencyPayload> {
+  const code = (row.code ?? "").trim();
+  if (!code) return { ok: false, error: "Missing code" };
+  const name = (row.name ?? "").trim();
+  if (!name) return { ok: false, error: "Missing name" };
+
+  const group = (row.comp_group ?? "").trim().toLowerCase();
+  if (group && !COMP_GROUPS.includes(group as (typeof COMP_GROUPS)[number])) {
+    return { ok: false, error: `Invalid comp_group: ${group}` };
+  }
+
+  const scaleName = (row.scale ?? "").trim();
+  if (!scaleName) return { ok: false, error: "Missing scale" };
+  const scale_id = ctx.scaleIdByName.get(scaleName.toLowerCase());
+  if (!scale_id) return { ok: false, error: `Unknown scale: ${scaleName}` };
+
+  return {
+    ok: true,
+    payload: {
+      code,
+      name,
+      description: (row.description ?? "").trim() || null,
+      category: (row.category ?? "").trim() || null,
+      comp_group: group || null,
+      scale_id,
+    },
+  };
+}
+
+const RESPONSE_TYPES = ["scale", "yes_no"] as const;
+
+export type ItemPayload = {
+  competency_id: string;
+  prompt_text: string;
+  response_type: string;
+  level_id: string | null;
+};
+
+/** Validate an assessment-item-CSV row, resolving competency by code + level by label (scoped to that competency's scale). */
+export function mapItemRow(
+  row: Record<string, string>,
+  ctx: { competencyByCode: Map<string, { id: string; scale_id: string }>; levels: ProficiencyLevel[] },
+): MapResult<ItemPayload> {
+  const code = (row.competency_code ?? "").trim();
+  if (!code) return { ok: false, error: "Missing competency_code" };
+  const comp = ctx.competencyByCode.get(code.toLowerCase());
+  if (!comp) return { ok: false, error: `Unknown competency code: ${code}` };
+
+  const prompt_text = (row.prompt_text ?? "").trim();
+  if (!prompt_text) return { ok: false, error: "Missing prompt_text" };
+
+  const response_type = (row.response_type ?? "").trim() || "yes_no";
+  if (!RESPONSE_TYPES.includes(response_type as (typeof RESPONSE_TYPES)[number])) {
+    return { ok: false, error: `Invalid response_type: ${response_type}` };
+  }
+
+  let level_id: string | null = null;
+  const levelLabel = (row.level ?? "").trim();
+  if (levelLabel) {
+    const match = levelsForScale(comp.scale_id, ctx.levels).find((l) => l.label.toLowerCase() === levelLabel.toLowerCase());
+    if (!match) return { ok: false, error: `Unknown level: ${levelLabel}` };
+    level_id = match.id;
+  }
+
+  return { ok: true, payload: { competency_id: comp.id, prompt_text, response_type, level_id } };
 }
