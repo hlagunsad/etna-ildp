@@ -21,17 +21,19 @@ export async function POST(req: Request) {
 
   const body = (await req.json().catch(() => ({}))) as {
     full_name?: string; email?: string; password?: string; role?: string;
-    org_unit_id?: string; job_role_id?: string; manager_id?: string;
+    org_unit_id?: string; job_role_id?: string; manager_id?: string; invite?: boolean;
   };
   const email = body.email?.trim();
   const password = body.password ?? "";
   const role = body.role ?? "employee";
+  const invite = body.invite !== false; // default: email an invite (the user sets their own password)
 
-  if (!email || !password) {
-    return NextResponse.json({ error: "Email and a temporary password are required" }, { status: 400 });
+  if (!email) {
+    return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }
-  if (password.length < 8) {
-    return NextResponse.json({ error: "Temporary password must be at least 8 characters" }, { status: 400 });
+  if (!invite) {
+    if (!password) return NextResponse.json({ error: "A temporary password is required" }, { status: 400 });
+    if (password.length < 8) return NextResponse.json({ error: "Temporary password must be at least 8 characters" }, { status: 400 });
   }
   if (!ROLES.includes(role)) {
     return NextResponse.json({ error: "Invalid role" }, { status: 400 });
@@ -40,9 +42,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "HR can only create employees and supervisors" }, { status: 403 });
   }
 
-  const { data: created, error: cErr } = await db.auth.admin.createUser({ email, password, email_confirm: true });
-  if (cErr || !created?.user) {
-    return NextResponse.json({ error: cErr?.message ?? "Could not create the user" }, { status: 400 });
+  // Invite mode emails a set-password link; password mode creates the account immediately.
+  let userId: string;
+  if (invite) {
+    const { data: invited, error: iErr } = await db.auth.admin.inviteUserByEmail(email, { redirectTo: new URL(req.url).origin });
+    if (iErr || !invited?.user) {
+      return NextResponse.json({ error: iErr?.message ?? "Could not send the invite email" }, { status: 400 });
+    }
+    userId = invited.user.id;
+  } else {
+    const { data: created, error: cErr } = await db.auth.admin.createUser({ email, password, email_confirm: true });
+    if (cErr || !created?.user) {
+      return NextResponse.json({ error: cErr?.message ?? "Could not create the user" }, { status: 400 });
+    }
+    userId = created.user.id;
   }
 
   // The handle_new_user trigger created a default profile; set the real fields.
@@ -56,7 +69,7 @@ export async function POST(req: Request) {
       manager_id: body.manager_id || null,
       status: "active",
     })
-    .eq("id", created.user.id);
+    .eq("id", userId);
   if (pErr) {
     return NextResponse.json({ error: `User created but profile update failed: ${pErr.message}` }, { status: 500 });
   }
@@ -66,9 +79,9 @@ export async function POST(req: Request) {
     actor_email: caller.email,
     action: "create",
     entity_type: "profiles",
-    entity_id: created.user.id,
-    after: { email, role },
+    entity_id: userId,
+    after: { email, role, invited: invite },
   });
 
-  return NextResponse.json({ id: created.user.id, email });
+  return NextResponse.json({ id: userId, email, invited: invite });
 }

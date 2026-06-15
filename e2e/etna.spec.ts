@@ -174,6 +174,19 @@ test("HR manages org units, and the create-user form assigns them", async ({ pag
   await expect(page.getByLabel("Org unit")).toBeVisible();
 });
 
+test("HR sees integration statuses and can send a test email", async ({ page }) => {
+  await signIn(page, CREDS.hr);
+  await page.getByRole("button", { name: "Admin" }).click();
+  // The Integrations card lists each external service with a status pill.
+  await expect(page.getByRole("heading", { name: "Integrations" })).toBeVisible();
+  await expect(page.getByText("Single sign-on")).toBeVisible();
+  await expect(page.getByText("HRIS sync")).toBeVisible();
+  await expect(page.getByText("LMS sync")).toBeVisible();
+  // "Send test email" exercises the email adapter end to end (logging stub — nothing actually sent).
+  await page.getByRole("button", { name: "Send test email" }).click();
+  await expect(page.getByText(/Logged a test email|Sent a test email/i)).toBeVisible();
+});
+
 // Restore the permission matrix to its seeded default after the permissions test.
 test.afterAll(async () => {
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {

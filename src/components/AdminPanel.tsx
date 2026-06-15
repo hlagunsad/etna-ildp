@@ -8,6 +8,7 @@ import { Button, Card, Field, PageHeader, Pill, inputClass } from "./ui";
 import type { OrgUnit, Profile, Role } from "@/lib/types";
 import CsvImport, { type RowResult } from "./import/CsvImport";
 import PermissionsMatrix from "./PermissionsMatrix";
+import IntegrationsPanel from "./IntegrationsPanel";
 
 type Audit = { id: string; actor_email: string | null; action: string; entity_type: string; created_at: string };
 type JobRole = { id: string; name: string };
@@ -20,6 +21,7 @@ export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role
   const [jobRoles, setJobRoles] = useState<JobRole[]>([]);
   const [orgUnits, setOrgUnits] = useState<OrgUnit[]>([]);
   const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [invite, setInvite] = useState(true);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,8 +58,10 @@ export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role
     e.preventDefault();
     setBusy(true); setError(null); setMsg(null);
     try {
-      await apiPost("/api/users/create", form);
-      setMsg(`Created ${form.email} — they can sign in now with the temporary password.`);
+      await apiPost("/api/users/create", { ...form, invite });
+      setMsg(invite
+        ? `Invited ${form.email} — they'll get an email to set their password.`
+        : `Created ${form.email} — share the temporary password so they can sign in.`);
       setForm({ ...EMPTY_FORM });
       await load();
     } catch (err) {
@@ -81,7 +85,13 @@ export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role
             <form onSubmit={createUser} className="grid gap-4 sm:grid-cols-2">
               <Field label="Full name" htmlFor="cu-name"><input id="cu-name" className={inputClass} value={form.full_name} onChange={(e) => set("full_name", e.target.value)} /></Field>
               <Field label="Email" htmlFor="cu-email"><input id="cu-email" type="email" autoComplete="off" required className={inputClass} value={form.email} onChange={(e) => set("email", e.target.value)} /></Field>
-              <Field label="Temporary password" htmlFor="cu-pw" hint="Minimum 8 characters"><input id="cu-pw" required className={inputClass} value={form.password} onChange={(e) => set("password", e.target.value)} /></Field>
+              <div className="flex items-start gap-2.5 rounded-xl bg-chip/50 px-3 py-2.5 sm:col-span-2">
+                <input id="cu-invite" type="checkbox" checked={invite} onChange={(e) => setInvite(e.target.checked)} className="mt-0.5 h-4 w-4 accent-brand" />
+                <label htmlFor="cu-invite" className="text-sm text-muted">Send an invite email — they set their own password.{invite ? "" : " (Set a temporary password below.)"}</label>
+              </div>
+              {!invite && (
+                <Field label="Temporary password" htmlFor="cu-pw" hint="Minimum 8 characters"><input id="cu-pw" required className={inputClass} value={form.password} onChange={(e) => set("password", e.target.value)} /></Field>
+              )}
               <Field label="Role" htmlFor="cu-role"><select id="cu-role" className={inputClass} value={form.role} onChange={(e) => set("role", e.target.value)}>{roleOptions.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
               <Field label="Org unit" htmlFor="cu-ou"><select id="cu-ou" className={inputClass} value={form.org_unit_id} onChange={(e) => set("org_unit_id", e.target.value)}><option value="">— Org unit —</option>{orgUnits.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</select></Field>
               <Field label="Job role" htmlFor="cu-jr"><select id="cu-jr" className={inputClass} value={form.job_role_id} onChange={(e) => set("job_role_id", e.target.value)}><option value="">— Job role —</option>{jobRoles.map((jr) => <option key={jr.id} value={jr.id}>{jr.name}</option>)}</select></Field>
@@ -98,6 +108,8 @@ export default function AdminPanel({ canUsers, role }: { canUsers: boolean; role
         {canUsers && <UsersImport onDone={load} />}
 
         {role === "super_admin" && <PermissionsMatrix />}
+
+        {canUsers && <IntegrationsPanel />}
 
         <Card className="p-5 sm:p-6">
           <h2 className="mb-3 text-sm font-semibold text-muted">User accounts ({profiles.length})</h2>

@@ -1,8 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import type { Provider } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase";
 import { Button, Card, Field, inputClass } from "./ui";
+
+// SSO is off until providers are listed in NEXT_PUBLIC_SSO_PROVIDERS (e.g. "google,azure").
+const SSO_PROVIDERS = (process.env.NEXT_PUBLIC_SSO_PROVIDERS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+const ssoLabel = (p: string) => (p === "azure" ? "Microsoft" : p.charAt(0).toUpperCase() + p.slice(1));
 
 const DEMO = [
   ["super@demo.test", "lolom0panot000", "Super Admin"],
@@ -24,6 +29,15 @@ export default function SignIn() {
     const { error } = await getSupabase().auth.signInWithPassword({ email, password });
     if (error) setError(error.message);
     setBusy(false);
+  }
+
+  async function ssoSignIn(provider: string) {
+    setError(null);
+    const { error } = await getSupabase().auth.signInWithOAuth({
+      provider: provider as Provider,
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) setError(error.message);
   }
 
   return (
@@ -62,6 +76,17 @@ export default function SignIn() {
             <p role="alert" className="rounded-xl bg-danger-50 px-3 py-2 text-sm font-medium text-danger">{error}</p>
           )}
         </form>
+
+        {SSO_PROVIDERS.length > 0 && (
+          <div className="mt-5 space-y-2 border-t border-line pt-5">
+            <p className="text-xs font-medium text-muted">Or use single sign-on</p>
+            {SSO_PROVIDERS.map((p) => (
+              <Button key={p} type="button" variant="secondary" className="w-full" onClick={() => ssoSignIn(p)}>
+                Continue with {ssoLabel(p)}
+              </Button>
+            ))}
+          </div>
+        )}
       </Card>
 
       <div className="mt-4 rounded-2xl border border-line bg-chip/60 p-4">

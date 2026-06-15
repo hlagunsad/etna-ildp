@@ -41,9 +41,13 @@ npm install
 #   NEXT_PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
 #   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 #   SUPABASE_SECRET_KEY=sb_secret_...        # server-only: seed script + engine routes
+#   # Optional integrations (absent = stubbed) — see docs/integrations.md:
+#   # NEXT_PUBLIC_SSO_PROVIDERS=google,azure
+#   # RESEND_API_KEY=re_...                  # server-only: email provider
+#   # HRIS_BASE_URL=  /  LMS_BASE_URL=       # server-only: sync endpoints
 
-# 1. Run supabase/migrations/0001_init.sql in the Supabase SQL editor
-#    (schema + scope-aware RLS + the DICT NICS domain seed).
+# 1. Run the SQL files in supabase/migrations/ in order, in the Supabase SQL editor
+#    (schema + scope-aware RLS + the DICT NICS domain seed, then the later phases).
 # 2. Create the demo accounts + a validated baseline:
 npm run seed
 
@@ -57,9 +61,9 @@ npm run test:e2e   # Playwright (employee → supervisor flow + RBAC)
 - **E2E (Playwright):** an employee takes a TNA → a supervisor validates it → the engine generates the prioritized plan; plus an RBAC negative test (an employee sees no management screens and no approval control).
 
 ## Scope (this is an MVP)
-**Built:** 4-role RBAC + separation of duties, the TNA → gap → ILDP 3-year engine, role dashboards (employee · supervisor team + queues · HR org rollup + approvals · super-admin users + audit), an immutable audit log, seeded demo data.
+**Built:** 4-role RBAC + separation of duties (with a configurable permission matrix), the TNA → gap → ILDP 3-year engine, role dashboards, an org-unit hierarchy, team/org competency reporting (heatmap + CSV/PDF), a cycle scheduler, in-app notifications, bulk user/training CSV import, email invites, an immutable audit log, and seeded demo data.
 
-**Spec'd but deferred:** configurable role→permission mapping, framework/CSV import UIs, MFA/SSO, email notifications (in-app only here), PDF exports, full WCAG audit, localization, LMS/HRIS integration, in-app account creation (seeded via the admin API instead). Assessment data is sensitive personal information (PH Data Privacy Act, RA 10173) — this demo uses fabricated data.
+**Spec'd but deferred:** MFA, competency/assessment-item CSV importers, deep RLS enforcement of the permission matrix, a full WCAG audit, and localization. External integrations (email, SSO, HRIS, LMS) ship as a stubbed adapter layer — see [docs/integrations.md](docs/integrations.md). Assessment data is sensitive personal information (PH Data Privacy Act, RA 10173) — this demo uses fabricated data.
 
 ## Credits
 Competency library, proficiency levels, and target language adapted from the **DICT National ICT Competency Standards (NICS)**, which are freely reusable. The TESDA Self-Assessment Guides informed the "Can I…?" assessment format (the items here are our own wording).
