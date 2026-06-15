@@ -46,6 +46,9 @@ export const CAPABILITY_LABEL: Record<Capability, string> = {
  * The built-in defaults — the matrix the app ships with, and the fallback when the
  * `role_permission` table is empty/unseeded. super_admin holds every capability and is
  * also short-circuited in `canWith` so it can never be locked out.
+ *
+ * Mirrored in supabase/migrations/0008_capability_rls.sql (`default_has_cap`), which the RLS
+ * policies consult — keep the two in sync if you change a role's default capabilities.
  */
 export const DEFAULT_MATRIX: PermissionMatrix = {
   super_admin: [...CAPABILITIES],
