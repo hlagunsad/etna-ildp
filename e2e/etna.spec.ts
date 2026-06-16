@@ -91,7 +91,9 @@ test("happy path: employee takes TNA → supervisor validates → plan generated
   await signIn(page, CREDS.supervisor);
   await page.getByRole("button", { name: "Team" }).click();
   await page.getByRole("button", { name: /Eddie Employee/ }).click();
-  await page.getByRole("button", { name: "Validate TNA" }).click();
+  // The supervisor reviews the CALCULATED competency levels (not the raw answers) and validates there.
+  await expect(page.getByRole("heading", { name: "Review the assessment" })).toBeVisible();
+  await page.getByRole("button", { name: "Validate & generate plan" }).click();
   await expect(page.getByText(/plan generated/i)).toBeVisible();
   await signOut(page);
 

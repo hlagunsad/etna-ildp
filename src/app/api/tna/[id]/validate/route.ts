@@ -3,10 +3,8 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getUserFromRequest } from "@/lib/auth";
 import { hasCapability } from "@/lib/serverPermissions";
 import { buildIldpItem } from "@/lib/gap";
-import { rollUpCompetency } from "@/lib/rollup";
+import { computeAssessment } from "@/lib/assessment";
 import type { Target } from "@/lib/types";
-
-const SCALE_ID = "00000000-0000-0000-0000-0000000000aa";
 
 // Validate a submitted TNA: confirm/adjust ratings, then run the roll-up → gap/diff →
 // ILDP upsert → progress snapshot → audit, atomically with the secret key. Authorization
@@ -53,55 +51,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const overrides = body.ratings ?? {};
   const snapshot = (cycle!.snapshot_of_targets as Target[]) ?? [];
 
-  // Rank ↔ level-id maps.
-  const { data: levels } = await db.from("proficiency_level").select("id, rank").eq("scale_id", SCALE_ID);
-  const idByRank: Record<number, string> = {};
-  const rankById: Record<string, number> = {};
-  for (const l of levels ?? []) { idByRank[l.rank] = l.id; rankById[l.id] = l.rank; }
-
-  // Yes/no "Can I…?" responses → assessed rank per competency, via the threshold roll-up.
-  const { data: items } = await db
-    .from("assessment_item")
-    .select("id, competency_id, level_id")
-    .eq("response_type", "yes_no");
-  const compByItem: Record<string, string> = {};
-  const levelRankByItem: Record<string, number> = {};
-  for (const it of items ?? []) {
-    compByItem[it.id] = it.competency_id;
-    if (it.level_id) levelRankByItem[it.id] = rankById[it.level_id];
-  }
-  const { data: responses } = await db
-    .from("tna_response")
-    .select("item_id, raw_answer")
-    .eq("tna_assessment_id", tnaId);
-  const itemsByComp: Record<string, { levelRank: number; yes: boolean }[]> = {};
-  for (const r of responses ?? []) {
-    const comp = compByItem[r.item_id];
-    const levelRank = levelRankByItem[r.item_id];
-    if (!comp || !levelRank) continue;
-    (itemsByComp[comp] ??= []).push({ levelRank, yes: r.raw_answer === "yes" });
-  }
-  const assessedByComp: Record<string, number> = {};
-  for (const comp of Object.keys(itemsByComp)) assessedByComp[comp] = rollUpCompetency(itemsByComp[comp]);
+  // Roll the raw responses up to an assessed rank per competency (shared with the preview
+  // route — the raw answers never surface here), then apply any supervisor overrides on top.
+  const { assessedByComp, previousByComp, idByRank } = await computeAssessment(db, tna, cycle!);
   for (const [comp, rank] of Object.entries(overrides)) assessedByComp[comp] = rank;
-
-  // Previous year's assessed ranks (for the annual diff), if any.
-  const previousByComp: Record<string, number> = {};
-  if (tna.cycle_year > 1) {
-    const { data: prevTna } = await db
-      .from("tna_assessment")
-      .select("id")
-      .eq("dev_cycle_id", cycle!.id)
-      .eq("cycle_year", tna.cycle_year - 1)
-      .maybeSingle();
-    if (prevTna) {
-      const { data: prev } = await db
-        .from("competency_result")
-        .select("competency_id, assessed_rank")
-        .eq("tna_assessment_id", prevTna.id);
-      for (const p of prev ?? []) if (p.assessed_rank != null) previousByComp[p.competency_id] = p.assessed_rank;
-    }
-  }
 
   // Ensure an ILDP exists (draft on first generation; existing one is updated in place).
   let { data: ildp } = await db.from("ildp").select("id").eq("dev_cycle_id", cycle!.id).maybeSingle();

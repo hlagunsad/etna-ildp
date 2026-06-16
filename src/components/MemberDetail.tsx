@@ -8,6 +8,7 @@ import { useCan } from "./PermissionsProvider";
 import { Button, Card } from "./ui";
 import type { Profile, Role } from "@/lib/types";
 import EmployeeDashboard from "./employee/EmployeeDashboard";
+import TnaReview from "./TnaReview";
 
 // A team member's detail with the management actions available to the caller. Authorization +
 // separation of duties are enforced server-side (RLS + the validate route); these buttons just
@@ -53,9 +54,11 @@ export default function MemberDetail({
   const ildp = board?.ildp ?? null;
   const notSelf = member.id !== selfId;
 
-  async function validateTna() {
-    if (!latestTna) return;
-    await apiPost(`/api/tna/${latestTna.id}/validate`);
+  async function onTnaValidated() {
+    setMsg("TNA validated — plan generated.");
+    setError(null);
+    await load();
+    setRefreshKey((k) => k + 1);
   }
   async function endorse() {
     if (!ildp) return;
@@ -84,9 +87,6 @@ export default function MemberDetail({
           <p className="text-sm text-muted">{member.email}{orgUnitName ? ` · ${orgUnitName}` : ""}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {notSelf && latestTna?.status === "submitted" && can(role, "validate_tna") && (
-            <Button onClick={() => run(validateTna, "TNA validated — plan generated.")} disabled={busy}>Validate TNA</Button>
-          )}
           {notSelf && ildp?.status === "pending_endorsement" && can(role, "endorse_ildp") && (
             <Button onClick={() => run(endorse, "ILDP endorsed.")} disabled={busy}>Endorse ILDP</Button>
           )}
@@ -105,6 +105,10 @@ export default function MemberDetail({
       <Card className="px-4 py-2.5 text-xs text-muted">
         Cycle: {board?.cycle ? `Year ${board.cycle.current_year}, ${board.cycle.status}` : "none"} · TNA: {latestTna?.status ?? "none"} · ILDP: {ildp?.status ?? "none"}
       </Card>
+
+      {notSelf && latestTna?.status === "submitted" && can(role, "validate_tna") && (
+        <TnaReview tnaId={latestTna.id} onValidated={onTnaValidated} />
+      )}
 
       <EmployeeDashboard key={refreshKey} userId={member.id} embedded />
     </div>
