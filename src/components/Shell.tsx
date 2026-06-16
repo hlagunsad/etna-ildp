@@ -80,18 +80,27 @@ export default function Shell({ session, profile }: { session: Session; profile:
   const drawerRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
-  const tabs: Tab[] = [
-    { key: "dashboard", label: "My Development", icon: <NavIcon d={ic.dashboard} /> },
-    { key: "tna", label: "My TNA", icon: <NavIcon d={ic.tna} /> },
-    { key: "ildp", label: "My ILDP", icon: <NavIcon d={ic.ildp} /> },
-    { key: "training", label: "My Training", icon: <NavIcon d={ic.training} /> },
-  ];
+  // Only employees are learners — the four "My …" tabs are theirs; management roles don't see them.
+  const isLearner = role === "employee";
+  const tabs: Tab[] = [];
+  if (isLearner) {
+    tabs.push(
+      { key: "dashboard", label: "My Development", icon: <NavIcon d={ic.dashboard} /> },
+      { key: "tna", label: "My TNA", icon: <NavIcon d={ic.tna} /> },
+      { key: "ildp", label: "My ILDP", icon: <NavIcon d={ic.ildp} /> },
+      { key: "training", label: "My Training", icon: <NavIcon d={ic.training} /> },
+    );
+  }
   if (can(role, "view_team")) tabs.push({ key: "team", label: "Team", icon: <NavIcon d={ic.team} /> });
   if (can(role, "view_org")) tabs.push({ key: "org", label: "Organization", icon: <NavIcon d={ic.org} /> });
   if (can(role, "advance_year")) tabs.push({ key: "cycles", label: "Cycles", icon: <NavIcon d={ic.cycles} /> });
   if (can(role, "view_team")) tabs.push({ key: "reports", label: "Reports", icon: <NavIcon d={ic.reports} /> });
   if (can(role, "manage_library")) tabs.push({ key: "library", label: "Library", icon: <NavIcon d={ic.library} /> });
   if (can(role, "view_audit")) tabs.push({ key: "audit", label: "Admin", icon: <NavIcon d={ic.audit} /> });
+
+  // The selected tab, clamped to what this role can see — a non-employee whose default would be
+  // "dashboard" lands on their first available tab (e.g. Team) instead of an empty learner view.
+  const activeKey = tabs.some((t) => t.key === active) ? active : (tabs[0]?.key ?? "");
 
   // ESC closes the drawer; focus the drawer when it opens; restore focus on close.
   useEffect(() => {
@@ -128,7 +137,7 @@ export default function Shell({ session, profile }: { session: Session; profile:
     return (
       <nav aria-label="Primary" className="flex flex-col gap-1">
         {tabs.map((t) => {
-          const isActive = active === t.key;
+          const isActive = activeKey === t.key;
           return (
             <button
               key={t.key}
@@ -148,7 +157,7 @@ export default function Shell({ session, profile }: { session: Session; profile:
     );
   }
 
-  const activeLabel = tabs.find((t) => t.key === active)?.label ?? "";
+  const activeLabel = tabs.find((t) => t.key === activeKey)?.label ?? "";
 
   return (
     <div className="min-h-dvh lg:flex">
@@ -224,18 +233,19 @@ export default function Shell({ session, profile }: { session: Session; profile:
 
       {/* Main */}
       <main id="main" className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
-        <div key={active} className="rise mx-auto max-w-5xl">
+        <div key={activeKey} className="rise mx-auto max-w-5xl">
           <p className="sr-only" aria-live="polite">{activeLabel}</p>
-          {active === "dashboard" && <EmployeeDashboard userId={userId} self />}
-          {active === "tna" && <TakeTna userId={userId} />}
-          {active === "ildp" && <MyIldp userId={userId} selfId={userId} />}
-          {active === "training" && <MyTraining userId={userId} />}
-          {active === "team" && <TeamPanel selfId={userId} role={role} />}
-          {active === "org" && <OrgPanel />}
-          {active === "cycles" && <CycleScheduler />}
-          {active === "reports" && <ReportsPanel role={role} />}
-          {active === "library" && <LibraryPanel />}
-          {active === "audit" && <AdminPanel canUsers={can(role, "manage_users")} role={role} />}
+          {isLearner && activeKey === "dashboard" && <EmployeeDashboard userId={userId} self />}
+          {isLearner && activeKey === "tna" && <TakeTna userId={userId} />}
+          {isLearner && activeKey === "ildp" && <MyIldp userId={userId} selfId={userId} />}
+          {isLearner && activeKey === "training" && <MyTraining userId={userId} />}
+          {activeKey === "team" && <TeamPanel selfId={userId} role={role} />}
+          {activeKey === "org" && <OrgPanel />}
+          {activeKey === "cycles" && <CycleScheduler />}
+          {activeKey === "reports" && <ReportsPanel role={role} />}
+          {activeKey === "library" && <LibraryPanel />}
+          {activeKey === "audit" && <AdminPanel canUsers={can(role, "manage_users")} role={role} />}
+          {tabs.length === 0 && <p className="text-sm text-muted">Loading…</p>}
         </div>
       </main>
     </div>

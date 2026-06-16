@@ -28,8 +28,8 @@ export async function POST(req: Request) {
   const orgUnitId = body.orgUnitId?.trim() || null;
   const dueDate = body.dueDate?.trim() || null;
 
-  const { data: profilesRaw } = await db.from("profiles").select("id, email, org_unit_id, job_role_id");
-  let profiles = (profilesRaw ?? []) as { id: string; email: string | null; org_unit_id: string | null; job_role_id: string | null }[];
+  const { data: profilesRaw } = await db.from("profiles").select("id, email, org_unit_id, job_role_id, role");
+  let profiles = (profilesRaw ?? []) as { id: string; email: string | null; org_unit_id: string | null; job_role_id: string | null; role: string }[];
   if (orgUnitId) profiles = profiles.filter((p) => p.org_unit_id === orgUnitId);
   const { data: cyclesRaw } = await db.from("dev_cycle").select("user_id");
   const cycleUserIds = new Set(((cyclesRaw ?? []) as { user_id: string }[]).map((c) => c.user_id));

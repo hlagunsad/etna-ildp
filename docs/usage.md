@@ -38,7 +38,7 @@ The left sidebar (a slide-out drawer on mobile) holds your tabs. What you see de
 
 | Tab | Who sees it |
 |---|---|
-| My Development, My TNA, My ILDP, My Training | Everyone |
+| My Development, My TNA, My ILDP, My Training | Employees (the learner self-scope) |
 | Team | Supervisor, HR, Super Admin |
 | Organization | HR, Super Admin |
 | Cycles | HR, Super Admin |
@@ -46,7 +46,7 @@ The left sidebar (a slide-out drawer on mobile) holds your tabs. What you see de
 | Library | HR, Super Admin |
 | Admin | HR, Super Admin (the permission matrix inside it is Super-Admin-only) |
 
-A **notification bell** sits at the top of the sidebar (and the mobile header) with an unread count — see [Notifications](#notifications). Whatever your role, you're also a learner with your own four "My …" tabs.
+A **notification bell** sits at the top of the sidebar (and the mobile header) with an unread count — see [Notifications](#notifications). Only **employees** get the four "My …" tabs (their own development); supervisors, HR, and super-admins are management roles and work through Team, Reports, and the admin areas.
 
 ---
 
@@ -265,7 +265,7 @@ Defaults: employees take their own TNA; supervisors add validate / endorse / vie
 
 **Readiness** — `on_track` · `at_risk` · `behind`. Driven by open critical gaps and whether the TNA is on time.
 
-**Roles** — Employee · Supervisor · HR / L&D Admin · Super Admin. Every role is also a learner with their own plan.
+**Roles** — Employee (the learner) · Supervisor · HR / L&D Admin · Super Admin. Only the Employee role is a learner; the others are management roles.
 
 ---
 

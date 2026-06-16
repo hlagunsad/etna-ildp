@@ -11,10 +11,11 @@ const CREDS: Record<string, [string, string]> = {
 };
 
 // The seeded permission defaults (super_admin omitted — always-on in code).
+// Only employees are learners → take_own_tna is employee-only (super-admin is always-on in code).
 const DEFAULT_PERMS: [string, string][] = [
   ["employee", "take_own_tna"],
-  ["supervisor", "take_own_tna"], ["supervisor", "validate_tna"], ["supervisor", "endorse_ildp"], ["supervisor", "view_team"],
-  ["hr_admin", "take_own_tna"], ["hr_admin", "validate_tna"], ["hr_admin", "endorse_ildp"], ["hr_admin", "view_team"],
+  ["supervisor", "validate_tna"], ["supervisor", "endorse_ildp"], ["supervisor", "view_team"],
+  ["hr_admin", "validate_tna"], ["hr_admin", "endorse_ildp"], ["hr_admin", "view_team"],
   ["hr_admin", "approve_ildp"], ["hr_admin", "view_org"], ["hr_admin", "manage_users"], ["hr_admin", "view_audit"], ["hr_admin", "advance_year"], ["hr_admin", "manage_library"],
 ];
 
@@ -60,6 +61,14 @@ test("RBAC: an employee has no management tabs and no approve control", async ({
   // Separation of duties at the UI: no approval control anywhere for an employee.
   await page.getByRole("button", { name: "My ILDP" }).click();
   await expect(page.getByRole("button", { name: "Approve" })).toHaveCount(0);
+});
+
+test("a supervisor is not a learner — no 'My …' tabs", async ({ page }) => {
+  await signIn(page, CREDS.supervisor);
+  await expect(page.getByRole("button", { name: "Team" })).toBeVisible(); // lands on a management tab
+  for (const t of ["My Development", "My TNA", "My ILDP", "My Training"]) {
+    await expect(page.getByRole("button", { name: t })).toHaveCount(0);
+  }
 });
 
 test("happy path: employee takes TNA → supervisor validates → plan generated", async ({ page }) => {
@@ -260,10 +269,18 @@ test.afterAll(async () => {
 });
 
 test("HR opens development cycles from the scheduler", async ({ page }) => {
+  // Make an EMPLOYEE eligible: clear employee2's cycle (employee, has a job role, no cycle).
+  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const emp2Id = data.users.find((u) => u.email === "employee2@demo.test")?.id;
+  if (emp2Id) await admin.from("dev_cycle").delete().eq("user_id", emp2Id);
+
   await signIn(page, CREDS.hr);
   await page.getByRole("button", { name: "Cycles" }).click();
   await expect(page.getByRole("heading", { name: "Cycle scheduler" })).toBeVisible();
-  // Eligible = job role + no cycle (the supervisor qualifies); open them.
+  // Eligible = an employee with a job role and no cycle (employee2, just cleared). Supervisors never qualify.
   await page.getByRole("button", { name: /Open \d+ cycle/ }).click();
   await expect(page.getByText("opened").first()).toBeVisible();
 });

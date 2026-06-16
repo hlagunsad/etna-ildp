@@ -27,12 +27,12 @@ export function cycleOutcome(items: { isCritical: boolean; status: GapStatus }[]
   return allCriticalMet ? "passed" : "carry_over";
 }
 
-/** People the scheduler can open a cycle for: have a job role, no cycle yet. */
-export function eligibleForCycle<T extends { id: string; job_role_id: string | null }>(
+/** People the scheduler can open a cycle for: an employee (only employees are learners) with a job role and no cycle yet. */
+export function eligibleForCycle<T extends { id: string; job_role_id: string | null; role: string }>(
   profiles: T[],
   cycleUserIds: Set<string>,
 ): T[] {
-  return profiles.filter((p) => p.job_role_id != null && !cycleUserIds.has(p.id));
+  return profiles.filter((p) => p.role === "employee" && p.job_role_id != null && !cycleUserIds.has(p.id));
 }
 
 // A TNA still awaiting the employee (not yet handed off for validation).

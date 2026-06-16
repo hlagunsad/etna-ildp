@@ -38,15 +38,19 @@ describe("cycleOutcome", () => {
 });
 
 describe("eligibleForCycle", () => {
-  const profiles: { id: string; job_role_id: string | null }[] = [
-    { id: "u1", job_role_id: "jr1" }, // has a role
-    { id: "u2", job_role_id: "jr2" }, // has a role + a cycle
-    { id: "u3", job_role_id: null }, // no role
+  const profiles: { id: string; job_role_id: string | null; role: string }[] = [
+    { id: "u1", job_role_id: "jr1", role: "employee" }, // employee with a job role
+    { id: "u2", job_role_id: "jr2", role: "employee" }, // employee with a job role + a cycle
+    { id: "u3", job_role_id: null, role: "employee" }, // employee, no job role
+    { id: "u4", job_role_id: "jr4", role: "supervisor" }, // non-employee with a job role
   ];
-  it("returns only people with a job role and no existing cycle", () => {
+  it("returns only employees with a job role and no existing cycle", () => {
     expect(eligibleForCycle(profiles, new Set(["u2"])).map((p) => p.id)).toEqual(["u1"]);
   });
-  it("returns none when everyone has a cycle or lacks a role", () => {
+  it("excludes non-employees even with a job role and no cycle", () => {
+    expect(eligibleForCycle(profiles, new Set()).map((p) => p.id)).toEqual(["u1", "u2"]);
+  });
+  it("returns none when the eligible employees already have cycles", () => {
     expect(eligibleForCycle(profiles, new Set(["u1", "u2"]))).toEqual([]);
   });
 });

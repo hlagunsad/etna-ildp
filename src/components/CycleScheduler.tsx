@@ -7,7 +7,7 @@ import { eligibleForCycle, isTnaOnTime } from "@/lib/cycle";
 import { Button, Card, Field, PageHeader, Pill, Spinner, inputClass } from "./ui";
 import { EditorStatus } from "./library/EditorShell";
 
-type Profile = { id: string; full_name: string | null; org_unit_id: string | null; job_role_id: string | null };
+type Profile = { id: string; full_name: string | null; org_unit_id: string | null; job_role_id: string | null; role: string };
 type OrgUnitOpt = { id: string; name: string };
 type Cycle = { id: string; user_id: string; current_year: number; status: string };
 type Tna = { dev_cycle_id: string; cycle_year: number; status: string; due_date: string | null };
@@ -39,7 +39,7 @@ export default function CycleScheduler() {
   const load = useCallback(async () => {
     const sb = getSupabase();
     const [{ data: ps }, { data: ou }, { data: cy }, { data: tn }] = await Promise.all([
-      sb.from("profiles").select("id, full_name, org_unit_id, job_role_id"),
+      sb.from("profiles").select("id, full_name, org_unit_id, job_role_id, role"),
       sb.from("org_unit").select("id, name").order("name"),
       sb.from("dev_cycle").select("id, user_id, current_year, status"),
       sb.from("tna_assessment").select("dev_cycle_id, cycle_year, status, due_date"),
@@ -57,7 +57,7 @@ export default function CycleScheduler() {
 
   const cycleUserIds = new Set(cycles.map((c) => c.user_id));
   const eligible = eligibleForCycle(profiles, cycleUserIds);
-  const withJobRole = profiles.filter((p) => p.job_role_id).length;
+  const withJobRole = profiles.filter((p) => p.role === "employee" && p.job_role_id).length;
   const today = new Date().toISOString().slice(0, 10);
 
   const tnaByKey = new Map(tnas.map((t) => [`${t.dev_cycle_id}:${t.cycle_year}`, t]));

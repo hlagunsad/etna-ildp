@@ -52,8 +52,9 @@ export const CAPABILITY_LABEL: Record<Capability, string> = {
  */
 export const DEFAULT_MATRIX: PermissionMatrix = {
   super_admin: [...CAPABILITIES],
-  hr_admin: [...CAPABILITIES],
-  supervisor: ["take_own_tna", "validate_tna", "endorse_ildp", "view_team"],
+  // Learner-scope (take_own_tna) is employees-only; management roles are not learners.
+  hr_admin: CAPABILITIES.filter((c) => c !== "take_own_tna"),
+  supervisor: ["validate_tna", "endorse_ildp", "view_team"],
   employee: ["take_own_tna"],
 };
 

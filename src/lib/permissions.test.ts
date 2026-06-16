@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { can, canValidate, canEndorse, canApprove, canWith, buildMatrix, DEFAULT_MATRIX } from "./permissions";
-import type { Role } from "./types";
-
-const ROLES: Role[] = ["employee", "supervisor", "hr_admin", "super_admin"];
 
 describe("can()", () => {
-  it("every role can take their own TNA (learner baseline)", () => {
-    for (const r of ROLES) expect(can(r, "take_own_tna")).toBe(true);
+  it("only employees are learners — take their own TNA (super-admin is the always-on exception)", () => {
+    expect(can("employee", "take_own_tna")).toBe(true);
+    expect(can("supervisor", "take_own_tna")).toBe(false);
+    expect(can("hr_admin", "take_own_tna")).toBe(false);
+    expect(can("super_admin", "take_own_tna")).toBe(true); // canWith short-circuits super to true
   });
   it("only supervisor and up can validate / endorse / view team", () => {
     expect(can("employee", "validate_tna")).toBe(false);

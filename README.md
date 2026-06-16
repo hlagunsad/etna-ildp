@@ -17,14 +17,14 @@ It started as a focused slice of a much larger spec — **role-based access with
 The sign-in page lists these too — tap a row to fill the form.
 
 ## Roles (RBAC, enforced server-side)
-| Role | Adds, on top of being a learner |
+| Role | What they do |
 |---|---|
-| **Employee** | Take own TNA, view own gaps/ILDP, log training. |
+| **Employee** | The learner: take own TNA, view own gaps/ILDP, log training. |
 | **Supervisor** | Validate their team's TNAs, endorse plans, verify training. |
 | **HR / L&D Admin** | Org-wide: final ILDP approval, org reports, the content library, the cycle scheduler, user management, the audit log. |
 | **Super Admin** | Everything, plus the configurable permission matrix. |
 
-Every user is also a learner with their own plan. **Separation of duties:** no one can validate their own TNA or approve their own ILDP. Capabilities are a **configurable matrix** — a super-admin tunes which role holds which capability, enforced in the UI, the routes, *and* the database (RLS).
+Only **employees** are learners (their own TNA, gaps, ILDP, and training). Supervisors, HR, and super-admins are management roles — they don't have their own development plan. **Separation of duties:** no one can validate their own TNA or approve their own ILDP. Capabilities are a **configurable matrix** — a super-admin tunes which role holds which capability, enforced in the UI, the routes, *and* the database (RLS).
 
 ## How it works
 1. **Baseline (Year 1).** An employee self-rates each competency their role requires. A supervisor validates the ratings. The system locks the role's targets into the cycle, computes the gaps (`target − assessed`), and generates the ILDP.
