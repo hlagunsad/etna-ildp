@@ -1,10 +1,10 @@
 # Usage guide
 
-How to use eTNA → ILDP, by role, end to end. New here? Read [Getting started](#getting-started) and [The TNA → ILDP lifecycle](#the-tna--ildp-lifecycle), then jump to your role.
+How to use Caliber, by role, end to end. New here? Read [Getting started](#getting-started) and [The Competency Assessment → Growth Plan lifecycle](#the-competency-assessment--growth-plan-lifecycle), then jump to your role.
 
 ## Contents
 - [Getting started](#getting-started)
-- [The TNA → ILDP lifecycle](#the-tna--ildp-lifecycle)
+- [The Competency Assessment → Growth Plan lifecycle](#the-competency-assessment--growth-plan-lifecycle)
 - [Employee guide](#employee-guide)
 - [Supervisor guide](#supervisor-guide)
 - [HR / L&D Admin guide](#hr--ld-admin-guide)
@@ -16,7 +16,7 @@ How to use eTNA → ILDP, by role, end to end. New here? Read [Getting started](
 
 ## Getting started
 
-eTNA → ILDP turns an annual competency self-assessment into a personal, supervisor-validated development plan tracked over three years. People rate themselves against the levels their role requires, a supervisor signs off, and the system turns the gaps into a prioritised plan with mapped training.
+Caliber turns an annual Competency Assessment into a personal, supervisor-validated Growth Plan tracked over three years. People rate themselves against the levels their role requires, a supervisor signs off, and the system turns the gaps into a prioritised plan with mapped training.
 
 **Open the demo:** https://training-analyzer-ten.vercel.app
 
@@ -38,7 +38,7 @@ The left sidebar (a slide-out drawer on mobile) holds your tabs. What you see de
 
 | Tab | Who sees it |
 |---|---|
-| My Development, My TNA, My ILDP, My Training | Employees (the learner self-scope) |
+| My Development, My Assessment, My Plan, My Training | Employees (the learner self-scope) |
 | Team | Supervisor, HR, Super Admin |
 | Organization | HR, Super Admin |
 | Cycles | HR, Super Admin |
@@ -50,22 +50,22 @@ A **notification bell** sits at the top of the sidebar (and the mobile header) w
 
 ---
 
-## The TNA → ILDP lifecycle
+## The Competency Assessment → Growth Plan lifecycle
 
 The whole app revolves around one loop, run once a year for three years.
 
 ```
 Year 1 (baseline)
-  Employee takes TNA  ──submit──►  Supervisor validates
+  Employee takes assessment  ──submit──►  Supervisor validates
                                           │
-                                gaps computed, ILDP generated
+                              gaps computed, Growth Plan generated
                                           ▼
   Employee acknowledges ──► Supervisor endorses ──► HR approves ──► plan active
                                                                         │
                   Employee logs training  ◄────────────────────────────┘
 
 Years 2–3 (re-assessment)
-  HR advances the year ──► new TNA opens ──► employee retakes ──► supervisor validates
+  HR advances the year ──► new assessment opens ──► employee retakes ──► supervisor validates
                           (diffed vs locked targets + last year; the same plan is updated)
 
 End of Year 3 ──► cycle closes: passed (all critical gaps closed) or carry-over
@@ -73,12 +73,12 @@ End of Year 3 ──► cycle closes: passed (all critical gaps closed) or carry
 
 Step by step:
 
-1. **Baseline.** An employee starts their TNA. The system locks the target levels their job role requires into the cycle — so later library edits don't move the goalposts mid-cycle — and opens the first self-assessment.
+1. **Baseline.** An employee starts their Competency Assessment. The system locks the target levels their job role requires into the cycle — so later library edits don't move the goalposts mid-cycle — and opens the first self-assessment.
 2. **Self-assessment.** The employee checks off the "Can I …?" statements they can already do. Their level for each competency is worked out from the answers.
-3. **Validation.** A supervisor reviews and validates. That one action computes the gaps (target − assessed), classifies each, sets a priority, and generates the ILDP.
+3. **Validation.** A supervisor reviews and validates. That one action computes the gaps (target − assessed), classifies each, sets a priority, and generates the Growth Plan.
 4. **Approval chain.** The employee acknowledges the plan, the supervisor endorses it, and HR gives final approval. Now it's active.
 5. **Training.** The employee works through courses mapped to their open gaps and marks progress; a supervisor can verify completion.
-6. **Re-assessment (Years 2–3).** HR advances the year, which opens a fresh TNA. On validation the system compares the new levels against both the locked targets and last year's, updates the same plan in place, and records the year's snapshot for the trend.
+6. **Re-assessment (Years 2–3).** HR advances the year, which opens a fresh assessment. On validation the system compares the new levels against both the locked targets and last year's, updates the same plan in place, and records the year's snapshot for the trend.
 7. **Close.** After Year 3 the cycle is **passed** if every critical competency is at or above target, otherwise **carry-over**.
 
 Every status word above is defined in the [Glossary](#glossary).
@@ -87,28 +87,28 @@ Every status word above is defined in the [Glossary](#glossary).
 
 ## Employee guide
 
-Your four tabs: **My Development**, **My TNA**, **My ILDP**, **My Training**.
+Your four tabs: **My Development**, **My Assessment**, **My Plan**, **My Training**.
 
 ### My Development
-Your home screen. Before you've started it invites you to **Start baseline TNA**. Once you have a cycle it shows:
+Your home screen. Before you've started it invites you to **Start baseline assessment**. Once you have a cycle it shows:
 - Your **cycle year** (1–3) and plan status, and a **readiness** pill — On Track, At Risk, or Behind.
 - **Competency gaps, by priority** — your open gaps, highest-priority first, each with its current → target level and status.
 - **3-year trend** — your assessed level per year, so you can see movement.
 
-### My TNA
+### My Assessment
 Your self-assessment for the current year.
-- With no cycle yet, **Start baseline TNA** opens one (this locks your role's targets for the three years).
+- With no cycle yet, **Start baseline assessment** opens one (this locks your role's targets for the three years).
 - While it's open you get one card per competency, with "Can I …?" statements grouped by level (Basic, Intermediate, Advanced). Check everything you can already do.
 - **Save draft** keeps your progress; **Submit for validation** sends it to your supervisor. After submitting it's read-only until they validate.
 
 Your level for each competency is derived from your answers — you don't pick a level directly.
 
-### My ILDP
-Your development plan, and where it sits in the approval chain: **Draft → Endorsement → Approval → Active**.
+### My Plan
+Your Growth Plan, and where it sits in the approval chain: **Draft → Endorsement → Approval → Active**.
 - When the plan is freshly generated you'll see **Acknowledge plan** — confirm you've reviewed it to send it on for endorsement.
 - **Plan items** lists each competency with its gap size, priority, and status.
 
-A plan only appears once your TNA has been validated.
+A plan only appears once your assessment has been validated.
 
 ### My Training
 Free courses mapped to your open gaps.
@@ -122,17 +122,17 @@ Free courses mapped to your open gaps.
 You have everything an employee has, plus **Team** and **Reports**.
 
 ### My Team
-Your direct reports, as cards. Each shows their org unit and current cycle / TNA / ILDP status, with an **Action needed** flag when something is waiting on you (a submitted TNA, or a plan ready to endorse). Open a card for the member's detail.
+Your direct reports, as cards. Each shows their org unit and current cycle / assessment / plan status, with an **Action needed** flag when something is waiting on you (a submitted assessment, or a plan ready to endorse). Open a card for the member's detail.
 
 ### Acting on a member
 A member's detail shows whichever actions apply right now:
-- **Validate TNA** — when their TNA is submitted. This is the big one: it computes their gaps and generates their plan.
-- **Endorse ILDP** — when their plan is awaiting endorsement.
+- **Validate Assessment** — when their assessment is submitted. This is the big one: it computes their gaps and generates their plan.
+- **Endorse Plan** — when their plan is awaiting endorsement.
 - **Advance year** — if you've been granted it.
 
 Below the buttons is the member's own development view, so you can see what you're signing off.
 
-**Separation of duties:** you can't validate or endorse your *own* TNA or plan — those actions only appear for other people, and someone else handles yours.
+**Separation of duties:** you can't validate or endorse your *own* assessment or plan — those actions only appear for other people, and someone else handles yours.
 
 ### Reports
 A competency-gap heatmap across your direct reports, plus readiness and rollups — see [Reports](#reports-heatmap-and-rollups).
@@ -147,15 +147,15 @@ When a report marks a course completed you can verify it — and, by the same ru
 HR sees the whole organisation and owns the content and the cycle calendar. On top of the supervisor tabs you get **Organization**, **Cycles**, **Library**, and **Admin**.
 
 ### Organization
-The org-wide view: headline counts (cycles, validated TNAs, cycles passed), a **most-gapped competencies** table (who to train, on what), and the **ILDP approval queue** — plans waiting for final sign-off, each with an **Approve** button.
+The org-wide view: headline counts (cycles, validated assessments, cycles passed), a **most-gapped competencies** table (who to train, on what), and the **Growth Plan approval queue** — plans waiting for final sign-off, each with an **Approve** button.
 
 ### Approving plans
 Approval is HR's step in the chain, after the supervisor's endorsement. Approve from the Organization queue or from a member's detail. As with validation and endorsement, you can't approve your own plan.
 
 ### Cycles — the scheduler
 **Cycles** runs the development calendar for everyone at once (full detail in [Cycle scheduler](#cycle-scheduler)).
-- **Open cycles** starts a baseline cycle + TNA for everyone who has a job role but no cycle yet. Optionally limit it to one org unit and set a TNA due date.
-- **Advance the year** moves every active cycle to its next year (opening a new annual TNA), or closes it at Year 3 with an outcome.
+- **Open cycles** starts a baseline cycle + assessment for everyone who has a job role but no cycle yet. Optionally limit it to one org unit and set an assessment due date.
+- **Advance the year** moves every active cycle to its next year (opening a new annual assessment), or closes it at Year 3 with an outcome.
 
 ### Library — the content
 **Library** is where the competency framework lives. Edits apply to *new* cycles; assessments already under way keep their targets locked at baseline. Seven tabs: Competencies, Scales, Job roles & targets, Training catalog, Assessment items, Org units, and Import — see [Content library](#content-library).
@@ -205,17 +205,17 @@ Supervisors see their team; HR sees the whole org (the data is scoped automatica
 
 ### Cycle scheduler
 The org-wide calendar.
-- **Eligible to open** counts people who have a job role but no cycle yet; **Open cycles** starts a baseline for them (optionally filtered to one org unit, with a TNA due date).
-- **Advance the year** advances every active cycle — a confirm step guards it — opening a new annual TNA or closing Year 3 with an outcome.
-- **Overdue TNAs** flags cycles whose due date has passed while the TNA is still open; these pull a person's readiness down.
+- **Eligible to open** counts people who have a job role but no cycle yet; **Open cycles** starts a baseline for them (optionally filtered to one org unit, with an assessment due date).
+- **Advance the year** advances every active cycle — a confirm step guards it — opening a new annual assessment or closing Year 3 with an outcome.
+- **Overdue assessments** flags cycles whose due date has passed while the assessment is still open; these pull a person's readiness down.
 
 Each bulk action returns a per-person result: opened, advanced, closed, skipped, or error.
 
 ### Notifications
 The bell shows an unread count and opens a feed. The person notified is always the employee, never the actor. They're told when:
-- their **TNA is validated** (their plan is ready),
-- their **ILDP is endorsed**, then **approved** (now active),
-- a **cycle is opened** for them, **advances** a year, or **closes**.
+- their assessment is validated (their plan is ready),
+- their plan is endorsed, then approved (now active),
+- a cycle is opened for them, advances a year, or closes.
 
 Click a notification to jump to the relevant screen, or **Mark all read**. The feed loads when you open it (there's no live push yet, so a brand-new item may need a re-open).
 
@@ -235,8 +235,8 @@ Ten capabilities gate the app:
 
 | Capability | Lets the role… |
 |---|---|
-| `take_own_tna` | take their own TNA |
-| `validate_tna` | validate a report's TNA |
+| `take_own_tna` | take their own assessment |
+| `validate_tna` | validate a report's assessment |
 | `endorse_ildp` | endorse a plan |
 | `approve_ildp` | give a plan final approval |
 | `advance_year` | open / advance cycles |
@@ -246,7 +246,7 @@ Ten capabilities gate the app:
 | `manage_users` | create / import users |
 | `manage_library` | author the content library |
 
-Defaults: employees take their own TNA; supervisors add validate / endorse / view-team; HR holds all ten; Super Admin always holds all ten. A Super Admin can retune any role's set in **Admin → Permissions**, and the change takes effect everywhere at once — the UI, the privileged routes, and the database — so a revoked capability is genuinely blocked, even for a direct API call.
+Defaults: employees take their own assessment; supervisors add validate / endorse / view-team; HR holds all ten; Super Admin always holds all ten. A Super Admin can retune any role's set in **Admin → Permissions**, and the change takes effect everywhere at once — the UI, the privileged routes, and the database — so a revoked capability is genuinely blocked, even for a direct API call.
 
 ### Integrations
 **Admin → Integrations** shows each external service — Email, SSO, HRIS, LMS — as **Configured** or **Stubbed**, and offers **Send test email**. By default everything is stubbed; user invites are the one live email path (via Supabase). Wiring up a real email provider, SSO, or HRIS/LMS sync is covered in **[Integrations](integrations.md)**.
@@ -255,15 +255,15 @@ Defaults: employees take their own TNA; supervisors add validate / endorse / vie
 
 ## Glossary
 
-**TNA status** — `not_started` · `in_progress` · `returned` (open / editable) · `submitted` (awaiting validation) · `validated` (gaps computed, plan generated) · `finalized` (year archived, read-only).
+**Assessment status** — `not_started` · `in_progress` · `returned` (open / editable) · `submitted` (awaiting validation) · `validated` (gaps computed, plan generated) · `finalized` (year archived, read-only).
 
-**ILDP status** — `draft` (awaiting the employee's acknowledgement) · `pending_endorsement` (awaiting the supervisor) · `pending_approval` (awaiting HR) · `active` (approved; training can be logged).
+**Plan status** — `draft` (awaiting the employee's acknowledgement) · `pending_endorsement` (awaiting the supervisor) · `pending_approval` (awaiting HR) · `active` (approved; training can be logged).
 
 **Cycle status** — `active` (a year in progress) · `passed` (Year 3 done, all critical gaps closed) · `carry_over` (Year 3 done, critical gaps remain).
 
 **Gap status** — `open` (gap remains) · `improving` (up since last year) · `stalled` (unchanged, still short) · `regressed` (down since last year) · `closed` (at or above target) · `new` (competency newly added to the role) · `retargeted` (target changed mid-cycle).
 
-**Readiness** — `on_track` · `at_risk` · `behind`. Driven by open critical gaps and whether the TNA is on time.
+**Readiness** — `on_track` · `at_risk` · `behind`. Driven by open critical gaps and whether the assessment is on time.
 
 **Roles** — Employee (the learner) · Supervisor · HR / L&D Admin · Super Admin. Only the Employee role is a learner; the others are management roles.
 

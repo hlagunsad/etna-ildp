@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getUserFromRequest } from "@/lib/auth";
 import { hasCapability } from "@/lib/serverPermissions";
 import { getEmailAdapter, renderNotificationEmail } from "@/lib/integrations";
+import { BRAND } from "@/lib/brand";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
   const rendered = renderNotificationEmail({
     title: "Test email from the integration layer",
     body: "If you received this, the email adapter is wired correctly.",
-    appName: "eTNA → ILDP",
+    appName: BRAND.app,
     appUrl: new URL(req.url).origin,
   });
   const result = await getEmailAdapter().send({ to: caller.email, subject: rendered.subject, text: rendered.text });

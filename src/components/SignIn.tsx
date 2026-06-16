@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Provider } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase";
 import { Button, Card, Field, inputClass } from "./ui";
+import { BRAND } from "@/lib/brand";
 
 // SSO is off until providers are listed in NEXT_PUBLIC_SSO_PROVIDERS (e.g. "google,azure").
 const SSO_PROVIDERS = (process.env.NEXT_PUBLIC_SSO_PROVIDERS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -50,12 +51,10 @@ export default function SignIn() {
             <path d="M12 12C12 9.5 9.8 7.5 7 7.5c0 2.5 2.2 4.5 5 4.5Z" />
           </svg>
         </span>
-        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
-          eTNA <span className="text-brand">→</span> ILDP
-        </h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">{BRAND.app}</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          A competency development platform — annual Training Needs Analysis, gap analysis, and a
-          3-year Individual Learning &amp; Development Plan.
+          A competency development platform — an annual {BRAND.assessment}, gap analysis, and a
+          three-year {BRAND.plan}.
         </p>
       </div>
 

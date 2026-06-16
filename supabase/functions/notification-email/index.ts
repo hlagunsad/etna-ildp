@@ -36,7 +36,7 @@ serve(async (req: Request) => {
     method: "POST",
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: "eTNA → ILDP <noreply@example.com>",
+      from: "Caliber <noreply@example.com>",
       to: profile.email,
       subject: record.title,
       text: `${record.body ?? record.title}\n\nOpen the app to view it.`,

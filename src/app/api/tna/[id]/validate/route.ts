@@ -21,9 +21,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     .select("id, status, cycle_year, dev_cycle_id")
     .eq("id", tnaId)
     .maybeSingle();
-  if (!tna) return NextResponse.json({ error: "TNA not found" }, { status: 404 });
+  if (!tna) return NextResponse.json({ error: "Assessment not found" }, { status: 404 });
   if (tna.status !== "submitted") {
-    return NextResponse.json({ error: "This TNA is not awaiting validation" }, { status: 409 });
+    return NextResponse.json({ error: "This assessment is not awaiting validation" }, { status: 409 });
   }
 
   const { data: cycle } = await db
@@ -41,10 +41,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const isManager = ownerProfile?.manager_id === caller.id;
   // Capability (configurable) gates WHETHER the role may validate; scope (admin/manager) gates WHOM.
   if (!(await hasCapability(db, role, "validate_tna")) || !(isAdmin || isManager)) {
-    return NextResponse.json({ error: "Not authorized to validate this TNA" }, { status: 403 });
+    return NextResponse.json({ error: "Not authorized to validate this assessment" }, { status: 403 });
   }
   if (ownerId === caller.id) {
-    return NextResponse.json({ error: "You cannot validate your own TNA (separation of duties)" }, { status: 403 });
+    return NextResponse.json({ error: "You cannot validate your own assessment (separation of duties)" }, { status: 403 });
   }
 
   const body = (await req.json().catch(() => ({}))) as { ratings?: Record<string, number> };

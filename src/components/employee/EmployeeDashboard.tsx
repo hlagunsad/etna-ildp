@@ -8,6 +8,7 @@ import { apiPost } from "@/lib/api";
 import { GAP_LABEL, GAP_TONE, READINESS_LABEL, READINESS_TONE } from "@/lib/labels";
 import { Button, Card, EmptyState, PageHeader, Pill, Spinner } from "../ui";
 import type { Competency, Readiness } from "@/lib/types";
+import { BRAND } from "@/lib/brand";
 
 function rankLabel(rank: number | undefined): string {
   return rank === 1 ? "Basic" : rank === 2 ? "Intermediate" : rank === 3 ? "Advanced" : "—";
@@ -44,12 +45,12 @@ export default function EmployeeDashboard({ userId, self, embedded }: { userId: 
       <EmptyState title="No development cycle yet">
         <p>
           {self
-            ? "Start your baseline Training Needs Analysis to measure your current levels against your role's targets and generate your plan."
-            : "This person has not started their baseline TNA yet."}
+            ? `Start your baseline ${BRAND.assessment} to measure your current levels against your role's targets and generate your plan.`
+            : `This person has not started their baseline ${BRAND.assessment} yet.`}
         </p>
         {self && (
           <div className="mt-4">
-            <Button onClick={startBaseline} disabled={busy}>{busy ? "Starting…" : "Start baseline TNA"}</Button>
+            <Button onClick={startBaseline} disabled={busy}>{busy ? "Starting…" : `Start baseline ${BRAND.assessmentShort}`}</Button>
           </div>
         )}
         {error && <p role="alert" className="mt-3 text-sm text-danger">{error}</p>}
@@ -89,7 +90,7 @@ export default function EmployeeDashboard({ userId, self, embedded }: { userId: 
         <Card className="p-5 sm:p-6">
           <h2 className="mb-3 text-sm font-semibold text-muted">Competency gaps, by priority</h2>
           {sortedItems.length === 0 ? (
-            <p className="text-sm text-muted">No plan items yet — complete and validate your TNA.</p>
+            <p className="text-sm text-muted">No plan items yet — complete and validate your {BRAND.assessment}.</p>
           ) : (
             <ul className="divide-y divide-line">
               {sortedItems.map((i) => (

@@ -24,7 +24,7 @@ export default function ItemEditor() {
     {
       filters: { competency_id: selectedCompId, response_type: "yes_no" },
       unique: "That item already exists.",
-      fk: "Can't delete — someone has already answered this item in a TNA.",
+      fk: "Can't delete — someone has already answered this item in an assessment.",
     },
   );
 
@@ -107,7 +107,7 @@ export default function ItemEditor() {
   return (
     <div className="space-y-6">
       <Card className="p-5 sm:p-6">
-        <Field label="Competency" htmlFor="it-comp" hint="Items are the “Can I…?” statements an employee checks during their TNA. They roll up to an assessed level.">
+        <Field label="Competency" htmlFor="it-comp" hint="Items are the “Can I…?” statements an employee checks during their assessment. They roll up to an assessed level.">
           <select id="it-comp" className={inputClass} value={selectedCompId} onChange={(e) => changeComp(e.target.value)}>
             {comps.length === 0 && <option value="">— No competencies yet —</option>}
             {comps.map((c) => (

@@ -1,4 +1,4 @@
-# eTNA → ILDP — what it is and how it works
+# Caliber — what it is and how it works
 
 ## The idea
 Organizations run a yearly "are our people at the level their jobs need?" exercise. This app does that end to end: each employee is measured against the competencies their role requires, the shortfalls become a personal development plan, and that plan is worked and re-measured every year for three years.

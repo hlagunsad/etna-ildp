@@ -6,6 +6,7 @@ import { loadBoard, loadLookups } from "@/lib/queries";
 import { apiPost } from "@/lib/api";
 import { Button, Card, EmptyState, PageHeader } from "../ui";
 import type { Competency, DevCycle, Level, Tna } from "@/lib/types";
+import { BRAND } from "@/lib/brand";
 
 type Item = { id: string; prompt_text: string; levelRank: number };
 
@@ -96,10 +97,10 @@ export default function TakeTna({ userId }: { userId: string }) {
 
   if (!cycle) {
     return (
-      <EmptyState title="Start your baseline TNA">
+      <EmptyState title={`Start your baseline ${BRAND.assessment}`}>
         <p>This locks your target levels for the 3-year cycle and opens your first self-assessment.</p>
         <div className="mt-4">
-          <Button onClick={startBaseline} disabled={busy}>{busy ? "Starting…" : "Start baseline TNA"}</Button>
+          <Button onClick={startBaseline} disabled={busy}>{busy ? "Starting…" : `Start baseline ${BRAND.assessmentShort}`}</Button>
         </div>
         {error && <p role="alert" className="mt-3 text-sm text-danger">{error}</p>}
       </EmptyState>
@@ -109,9 +110,9 @@ export default function TakeTna({ userId }: { userId: string }) {
   if (!tna || tna.status === "submitted" || tna.status === "validated" || tna.status === "finalized") {
     return (
       <Card className="p-8 text-center text-sm text-muted">
-        {tna?.status === "submitted" && "Your TNA is submitted and awaiting validation by your supervisor."}
-        {(tna?.status === "validated" || tna?.status === "finalized") && `Your Year ${tna.cycle_year} TNA is validated. Check My Development for your gaps.`}
-        {!tna && "No open TNA for this year yet."}
+        {tna?.status === "submitted" && `Your ${BRAND.assessment} is submitted and awaiting validation by your supervisor.`}
+        {(tna?.status === "validated" || tna?.status === "finalized") && `Your Year ${tna.cycle_year} ${BRAND.assessment} is validated. Check My Development for your gaps.`}
+        {!tna && `No open ${BRAND.assessment} for this year yet.`}
       </Card>
     );
   }
@@ -119,7 +120,7 @@ export default function TakeTna({ userId }: { userId: string }) {
   return (
     <>
       <PageHeader
-        title={`Training Needs Analysis — Year ${tna.cycle_year}`}
+        title={`${BRAND.assessment} — Year ${tna.cycle_year}`}
         subtitle="Check every statement you can already do. Your level for each competency is worked out from your answers."
       />
 

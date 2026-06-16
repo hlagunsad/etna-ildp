@@ -59,24 +59,24 @@ test("RBAC: an employee has no management tabs and no approve control", async ({
   await expect(page.getByRole("button", { name: "Organization" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Admin" })).toHaveCount(0);
   // Separation of duties at the UI: no approval control anywhere for an employee.
-  await page.getByRole("button", { name: "My ILDP" }).click();
+  await page.getByRole("button", { name: "My Plan" }).click();
   await expect(page.getByRole("button", { name: "Approve" })).toHaveCount(0);
 });
 
 test("a supervisor is not a learner — no 'My …' tabs", async ({ page }) => {
   await signIn(page, CREDS.supervisor);
   await expect(page.getByRole("button", { name: "Team" })).toBeVisible(); // lands on a management tab
-  for (const t of ["My Development", "My TNA", "My ILDP", "My Training"]) {
+  for (const t of ["My Development", "My Assessment", "My Plan", "My Training"]) {
     await expect(page.getByRole("button", { name: t })).toHaveCount(0);
   }
 });
 
 test("happy path: employee takes TNA → supervisor validates → plan generated", async ({ page }) => {
   await signIn(page, CREDS.employee2);
-  await page.getByRole("button", { name: "My TNA" }).click();
+  await page.getByRole("button", { name: "My Assessment" }).click();
 
   // employee2 has no cycle yet → start the baseline.
-  const start = page.getByRole("button", { name: "Start baseline TNA" });
+  const start = page.getByRole("button", { name: "Start baseline Assessment" });
   await expect(start).toBeVisible();
   await start.click();
 
@@ -106,10 +106,10 @@ test("happy path: employee takes TNA → supervisor validates → plan generated
   await expect(page.getByText(/plan generated/i)).toBeVisible();
   await signOut(page);
 
-  // The DB trigger notified the employee that their TNA was validated — it shows in their bell.
+  // The DB trigger notified the employee that their assessment was validated — it shows in their bell.
   await signIn(page, CREDS.employee2);
   await page.getByRole("button", { name: /Notifications/ }).click();
-  await expect(page.getByText(/TNA was validated/i)).toBeVisible();
+  await expect(page.getByText(/Competency Assessment was validated/i)).toBeVisible();
 });
 
 // Tidy up any rows a failed run might leave behind (the happy path deletes its own).
@@ -283,4 +283,74 @@ test("HR opens development cycles from the scheduler", async ({ page }) => {
   // Eligible = an employee with a job role and no cycle (employee2, just cleared). Supervisors never qualify.
   await page.getByRole("button", { name: /Open \d+ cycle/ }).click();
   await expect(page.getByText("opened").first()).toBeVisible();
+});
+
+// Full lifecycle: HR creates the account → the employee self-assesses → the supervisor reviews
+// the CALCULATED eTNA (never the raw answers) and validates → the employee acknowledges and
+// sees their generated plan. Creates a real account and deletes it afterward.
+let lifecycleEmail: string | null = null;
+
+test.afterAll(async () => {
+  if (!lifecycleEmail) return;
+  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const u = data.users.find((x) => x.email === lifecycleEmail);
+  if (u) await admin.auth.admin.deleteUser(u.id); // cascades the profile + cycle
+});
+
+test("full lifecycle: HR creates an employee → they assess → supervisor validates → plan", async ({ page }) => {
+  test.setTimeout(120_000);
+  const ts = Date.now();
+  const email = `e2e-life-${ts}@demo.test`;
+  lifecycleEmail = email;
+  const password = "lolom0panot999";
+  const fullName = `E2E Lifecycle ${ts}`;
+
+  // 1. HR creates the employee (temp-password mode) — a Junior IT Analyst managed by the supervisor.
+  await signIn(page, CREDS.hr);
+  await page.getByRole("button", { name: "Admin" }).click();
+  await page.getByLabel("Full name").fill(fullName);
+  await page.getByLabel("Email", { exact: true }).fill(email);
+  await page.getByLabel(/Send an invite email/).uncheck();
+  await page.getByLabel("Temporary password", { exact: true }).fill(password);
+  await page.getByLabel("Role", { exact: true }).selectOption("employee");
+  await page.getByLabel("Job role").selectOption({ label: "Junior IT Analyst" });
+  await page.getByLabel("Manager").selectOption({ label: "Vince Supervisor" });
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByText(`Created ${email}`)).toBeVisible();
+  await signOut(page);
+
+  // 2. The new employee signs in and submits their baseline TNA.
+  await signIn(page, [email, password]);
+  await page.getByRole("button", { name: "My Assessment" }).click();
+  await page.getByRole("button", { name: "Start baseline Assessment" }).click();
+  const comps = page.getByTestId("tna-comp");
+  await expect(comps.first()).toBeVisible();
+  const n = await comps.count();
+  for (let i = 0; i < n; i++) {
+    const basics = comps.nth(i).locator('input[data-level="1"]');
+    if ((await basics.count()) >= 2) { await basics.nth(0).check(); await basics.nth(1).check(); }
+  }
+  await page.getByRole("button", { name: "Submit for validation" }).click();
+  await expect(page.getByText(/awaiting validation/i)).toBeVisible();
+  await signOut(page);
+
+  // 3. The supervisor reviews the CALCULATED assessment (no raw answers) and validates.
+  await signIn(page, CREDS.supervisor);
+  await page.getByRole("button", { name: "Team" }).click();
+  await page.getByRole("button", { name: fullName }).click();
+  await expect(page.getByRole("heading", { name: "Review the assessment" })).toBeVisible();
+  await page.getByRole("button", { name: "Validate & generate plan" }).click();
+  await expect(page.getByText(/plan generated/i)).toBeVisible();
+  await signOut(page);
+
+  // 4. The employee acknowledges their plan and sees their gaps — the last part for them.
+  await signIn(page, [email, password]);
+  await page.getByRole("button", { name: "My Plan" }).click();
+  await page.getByRole("button", { name: "Acknowledge plan" }).click();
+  await expect(page.getByText("Plan items")).toBeVisible();
+  await page.getByRole("button", { name: "My Development" }).click();
+  await expect(page.getByText("Cybersecurity").first()).toBeVisible(); // a generated gap
 });

@@ -13,6 +13,7 @@ import {
 import { useCan } from "../PermissionsProvider";
 import { GAP_LABEL, GAP_TONE, READINESS_LABEL, READINESS_TONE, TONE_CELL } from "@/lib/labels";
 import type { Role } from "@/lib/types";
+import { BRAND } from "@/lib/brand";
 import { Button, Card, EmptyState, PageHeader, Pill, Spinner } from "../ui";
 
 export default function ReportsPanel({ role }: { role: Role | null }) {
@@ -81,7 +82,7 @@ export default function ReportsPanel({ role }: { role: Role | null }) {
 
       {people.length === 0 ? (
         <EmptyState title="No validated cycles yet">
-          <p>Once a TNA is validated, gaps and readiness for {org ? "the organization" : "your team"} appear here.</p>
+          <p>Once a {BRAND.assessment} is validated, gaps and readiness for {org ? "the organization" : "your team"} appear here.</p>
         </EmptyState>
       ) : (
         <div className="print-area space-y-6">

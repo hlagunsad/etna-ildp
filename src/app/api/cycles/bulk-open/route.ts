@@ -81,7 +81,7 @@ export async function POST(req: Request) {
         .from("tna_assessment")
         .insert({ dev_cycle_id: cycleId, cycle_year: 1, type: "baseline", status: "in_progress", due_date: dueDate });
       if (tErr) {
-        results.push({ label, status: "error", message: `Cycle created but TNA failed: ${tErr.message}` });
+        results.push({ label, status: "error", message: `Cycle created but the assessment failed: ${tErr.message}` });
         continue;
       }
       await db.from("audit_log").insert({
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
         entity_id: cycleId,
         after: { baseline_year: year, due_date: dueDate },
       });
-      results.push({ label, status: "opened", message: dueDate ? `TNA due ${dueDate}` : undefined });
+      results.push({ label, status: "opened", message: dueDate ? `Assessment due ${dueDate}` : undefined });
     } catch (e) {
       results.push({ label, status: "error", message: e instanceof Error ? e.message : "Failed" });
     }

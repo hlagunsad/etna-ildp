@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase";
 import { useCan } from "./PermissionsProvider";
 import { ROLE_LABEL } from "@/lib/labels";
+import { BRAND } from "@/lib/brand";
 import type { Profile } from "@/lib/types";
 import { Button } from "./ui";
 import EmployeeDashboard from "./employee/EmployeeDashboard";
@@ -32,7 +33,7 @@ function Wordmark({ onClick }: { onClick?: () => void }) {
         </svg>
       </span>
       <span className="font-display text-lg font-semibold tracking-tight text-ink">
-        eTNA <span className="text-brand">→</span> ILDP
+        {BRAND.app}
       </span>
     </button>
   );
@@ -86,8 +87,8 @@ export default function Shell({ session, profile }: { session: Session; profile:
   if (isLearner) {
     tabs.push(
       { key: "dashboard", label: "My Development", icon: <NavIcon d={ic.dashboard} /> },
-      { key: "tna", label: "My TNA", icon: <NavIcon d={ic.tna} /> },
-      { key: "ildp", label: "My ILDP", icon: <NavIcon d={ic.ildp} /> },
+      { key: "tna", label: `My ${BRAND.assessmentShort}`, icon: <NavIcon d={ic.tna} /> },
+      { key: "ildp", label: `My ${BRAND.planShort}`, icon: <NavIcon d={ic.ildp} /> },
       { key: "training", label: "My Training", icon: <NavIcon d={ic.training} /> },
     );
   }

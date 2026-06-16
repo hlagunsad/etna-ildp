@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { Button, Card, Field, inputClass } from "./ui";
+import { BRAND } from "@/lib/brand";
 
 // Shown when a user arrives via an invite or password-reset link (a recovery session).
 // They set a password, which finishes activating the invited account.
@@ -40,7 +41,7 @@ export default function SetPassword({ onDone }: { onDone: () => void }) {
           </svg>
         </span>
         <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Set your password</h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted">Choose a password to finish setting up your eTNA &rarr; ILDP account.</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted">Choose a password to finish setting up your {BRAND.app} account.</p>
       </div>
 
       <Card className="p-6">

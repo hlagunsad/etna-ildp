@@ -6,6 +6,7 @@ import { loadBoard, loadLookups, type Board } from "@/lib/queries";
 import { GAP_LABEL, GAP_TONE } from "@/lib/labels";
 import { Button, Card, EmptyState, PageHeader, Pill, Spinner } from "../ui";
 import type { Competency } from "@/lib/types";
+import { BRAND } from "@/lib/brand";
 
 const CHAIN = ["draft", "pending_endorsement", "pending_approval", "active"];
 const CHAIN_LABEL: Record<string, string> = {
@@ -43,7 +44,7 @@ export default function MyIldp({ userId, selfId }: { userId: string; selfId: str
   }
 
   if (!board) return <Spinner />;
-  if (!board.ildp) return <EmptyState title="No plan yet"><p>Complete and validate your TNA to generate your plan.</p></EmptyState>;
+  if (!board.ildp) return <EmptyState title="No plan yet"><p>Complete and validate your {BRAND.assessment} to generate your plan.</p></EmptyState>;
 
   const status = board.ildp.status;
   const currentStep = CHAIN.indexOf(status);
@@ -52,7 +53,7 @@ export default function MyIldp({ userId, selfId }: { userId: string; selfId: str
 
   return (
     <>
-      <PageHeader title="Individual Learning & Development Plan" subtitle="Approval chain: employee acknowledges → supervisor endorses → HR approves." />
+      <PageHeader title={BRAND.plan} subtitle="Approval chain: employee acknowledges → supervisor endorses → HR approves." />
 
       <div className="space-y-5">
         <Card className="p-5">

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { loadLookups } from "@/lib/queries";
 import { Button, Card, PageHeader, Spinner } from "./ui";
+import { BRAND } from "@/lib/brand";
 
 type Rollup = { name: string; count: number; totalPriority: number };
 
@@ -69,12 +70,12 @@ export default function OrgPanel() {
 
   return (
     <>
-      <PageHeader title="Organization" subtitle="Org-wide training-needs rollup and the final ILDP approval queue." />
+      <PageHeader title="Organization" subtitle={`Org-wide competency-gap rollup and the final ${BRAND.plan} approval queue.`} />
 
       <div className="space-y-6">
         <div className="grid grid-cols-3 gap-3">
           <Stat label="Cycles" value={stats.cycles} />
-          <Stat label="Validated TNAs" value={stats.validated} />
+          <Stat label={`Validated ${BRAND.assessmentShort}s`} value={stats.validated} />
           <Stat label="Cycles passed" value={stats.passed} />
         </div>
 
@@ -107,7 +108,7 @@ export default function OrgPanel() {
         </Card>
 
         <Card className="p-5 sm:p-6">
-          <h2 className="mb-3 text-sm font-semibold text-muted">ILDP approval queue</h2>
+          <h2 className="mb-3 text-sm font-semibold text-muted">{BRAND.plan} approval queue</h2>
           {pending.length === 0 ? (
             <p className="text-sm text-muted">Nothing awaiting final approval.</p>
           ) : (

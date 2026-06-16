@@ -17,6 +17,8 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:3000",
     trace: "on-first-retry",
+    // SLOWMO=600 npx playwright test ... --headed  → pause ~0.6s between actions to watch. Off by default.
+    launchOptions: { slowMo: Number(process.env.SLOWMO) || 0 },
   },
   webServer: {
     command: "npm run dev",

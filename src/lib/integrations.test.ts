@@ -11,27 +11,27 @@ import {
 
 describe("renderInviteEmail", () => {
   it("names the app + inviter and includes the accept link", () => {
-    const r = renderInviteEmail({ appName: "eTNA", inviterName: "Hana HR", acceptUrl: "https://app/accept#tok" });
-    expect(r.subject).toContain("eTNA");
+    const r = renderInviteEmail({ appName: "Caliber", inviterName: "Hana HR", acceptUrl: "https://app/accept#tok" });
+    expect(r.subject).toContain("Caliber");
     expect(r.text).toContain("Hana HR");
     expect(r.text).toContain("https://app/accept#tok");
     expect(r.text.toLowerCase()).toContain("set your password");
   });
   it("falls back to a generic greeting with no inviter", () => {
-    const r = renderInviteEmail({ appName: "eTNA", acceptUrl: "https://app/accept" });
+    const r = renderInviteEmail({ appName: "Caliber", acceptUrl: "https://app/accept" });
     expect(r.text.toLowerCase()).toContain("invited");
   });
 });
 
 describe("renderNotificationEmail", () => {
   it("uses the title as subject and includes body + app link", () => {
-    const r = renderNotificationEmail({ title: "TNA validated", body: "Your TNA was validated.", appName: "eTNA", appUrl: "https://app" });
-    expect(r.subject).toBe("TNA validated");
-    expect(r.text).toContain("Your TNA was validated.");
+    const r = renderNotificationEmail({ title: "Competency Assessment validated", body: "Your Competency Assessment was validated.", appName: "Caliber", appUrl: "https://app" });
+    expect(r.subject).toBe("Competency Assessment validated");
+    expect(r.text).toContain("Your Competency Assessment was validated.");
     expect(r.text).toContain("https://app");
   });
   it("falls back to the title when there is no body", () => {
-    const r = renderNotificationEmail({ title: "Cycle opened", body: null, appName: "eTNA", appUrl: "https://app" });
+    const r = renderNotificationEmail({ title: "Cycle opened", body: null, appName: "Caliber", appUrl: "https://app" });
     expect(r.text).toContain("Cycle opened");
   });
 });

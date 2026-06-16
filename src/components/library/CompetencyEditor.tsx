@@ -15,7 +15,7 @@ export default function CompetencyEditor() {
   const { rows, loading, create, update, remove } = useCrud<CompetencyRow>("competency", SELECT, {
     orderBy: "code",
     unique: "A competency with that code already exists.",
-    fk: "Can't delete — this competency is used in a TNA, plan, result, or role target.",
+    fk: "Can't delete — this competency is used in an assessment, plan, result, or role target.",
   });
   const [scales, setScales] = useState<Scale[]>([]);
   const [levels, setLevels] = useState<ProficiencyLevel[]>([]);

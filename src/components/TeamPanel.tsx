@@ -5,6 +5,7 @@ import { getSupabase } from "@/lib/supabase";
 import { Card, PageHeader, Pill, Spinner } from "./ui";
 import type { OrgUnit, Profile, Role } from "@/lib/types";
 import MemberDetail from "./MemberDetail";
+import { BRAND } from "@/lib/brand";
 
 type Summary = { cycleYear: number | null; cycleStatus: string | null; tnaStatus: string | null; ildpStatus: string | null };
 
@@ -50,7 +51,7 @@ export default function TeamPanel({ selfId, role }: { selfId: string; role: Role
 
   return (
     <>
-      <PageHeader title="My Team" subtitle="Your direct reports. Open a member to validate their TNA or endorse their plan." />
+      <PageHeader title="My Team" subtitle={`Your direct reports. Open a member to validate their ${BRAND.assessment} or endorse their plan.`} />
       {members.length === 0 ? (
         <Card className="p-6 text-sm text-muted">No direct reports.</Card>
       ) : (
@@ -70,7 +71,7 @@ export default function TeamPanel({ selfId, role }: { selfId: string; role: Role
                 </div>
                 <p className="mt-0.5 text-xs text-muted">{orgUnitName(m.org_unit_id) ?? "—"}</p>
                 <p className="mt-2 text-xs text-muted">
-                  Cycle {s?.cycleYear ? `Y${s.cycleYear} · ${s.cycleStatus}` : "—"} · TNA {s?.tnaStatus ?? "—"} · ILDP {s?.ildpStatus ?? "—"}
+                  Cycle {s?.cycleYear ? `Y${s.cycleYear} · ${s.cycleStatus}` : "—"} · {BRAND.assessmentShort} {s?.tnaStatus ?? "—"} · {BRAND.planShort} {s?.ildpStatus ?? "—"}
                 </p>
               </button>
             );

@@ -6,6 +6,7 @@ import { apiPost } from "@/lib/api";
 import { eligibleForCycle, isTnaOnTime } from "@/lib/cycle";
 import { Button, Card, Field, PageHeader, Pill, Spinner, inputClass } from "./ui";
 import { EditorStatus } from "./library/EditorShell";
+import { BRAND } from "@/lib/brand";
 
 type Profile = { id: string; full_name: string | null; org_unit_id: string | null; job_role_id: string | null; role: string };
 type OrgUnitOpt = { id: string; name: string };
@@ -106,14 +107,14 @@ export default function CycleScheduler() {
 
   return (
     <>
-      <PageHeader title="Cycle scheduler" subtitle="Open development cycles org-wide, set TNA due dates, and advance the year in bulk." />
+      <PageHeader title="Cycle scheduler" subtitle={`Open development cycles org-wide, set ${BRAND.assessmentShort} due dates, and advance the year in bulk.`} />
 
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Stat label="With a job role" value={withJobRole} />
           <Stat label="Have a cycle" value={cycles.length} />
           <Stat label="Eligible to open" value={eligible.length} />
-          <Stat label="Overdue TNAs" value={overdue} danger={overdue > 0} />
+          <Stat label={`Overdue ${BRAND.assessmentShort}s`} value={overdue} danger={overdue > 0} />
         </div>
 
         <Card className="p-4">
@@ -129,7 +130,7 @@ export default function CycleScheduler() {
 
         <Card className="p-5 sm:p-6">
           <h2 className="text-sm font-semibold text-ink">Open cycles</h2>
-          <p className="mb-4 mt-1 text-xs text-muted">Starts a baseline cycle + TNA for everyone with a job role and no cycle yet — {eligible.length} eligible now.</p>
+          <p className="mb-4 mt-1 text-xs text-muted">Starts a baseline cycle + {BRAND.assessmentShort} for everyone with a job role and no cycle yet — {eligible.length} eligible now.</p>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Org unit" htmlFor="cs-ou" hint="Optional — limit to one org unit.">
               <select id="cs-ou" className={inputClass} value={orgUnitId} onChange={(e) => setOrgUnitId(e.target.value)}>
@@ -137,7 +138,7 @@ export default function CycleScheduler() {
                 {orgUnits.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </Field>
-            <Field label="TNA due date" htmlFor="cs-open-due" hint="Optional — the submission deadline.">
+            <Field label={`${BRAND.assessmentShort} due date`} htmlFor="cs-open-due" hint="Optional — the submission deadline.">
               <input id="cs-open-due" type="date" className={inputClass} value={openDue} onChange={(e) => setOpenDue(e.target.value)} />
             </Field>
           </div>
@@ -150,9 +151,9 @@ export default function CycleScheduler() {
 
         <Card className="p-5 sm:p-6">
           <h2 className="text-sm font-semibold text-ink">Advance the year</h2>
-          <p className="mb-4 mt-1 text-xs text-muted">Advances every active cycle to its next year (opens an annual TNA), or closes it at Year 3 with an outcome.</p>
+          <p className="mb-4 mt-1 text-xs text-muted">Advances every active cycle to its next year (opens an annual {BRAND.assessmentShort}), or closes it at Year 3 with an outcome.</p>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="New TNA due date" htmlFor="cs-adv-due" hint="Optional — deadline for the new round.">
+            <Field label={`New ${BRAND.assessmentShort} due date`} htmlFor="cs-adv-due" hint="Optional — deadline for the new round.">
               <input id="cs-adv-due" type="date" className={inputClass} value={advanceDue} onChange={(e) => setAdvanceDue(e.target.value)} />
             </Field>
           </div>

@@ -1,4 +1,5 @@
 import type { Role } from "./types";
+import { BRAND } from "./brand";
 
 export type Capability =
   | "take_own_tna"
@@ -30,10 +31,10 @@ export const CAPABILITIES: Capability[] = [
 ];
 
 export const CAPABILITY_LABEL: Record<Capability, string> = {
-  take_own_tna: "Take own TNA",
-  validate_tna: "Validate TNA",
-  endorse_ildp: "Endorse ILDP",
-  approve_ildp: "Approve ILDP",
+  take_own_tna: `Take own ${BRAND.assessmentShort}`,
+  validate_tna: `Validate ${BRAND.assessmentShort}`,
+  endorse_ildp: `Endorse ${BRAND.planShort}`,
+  approve_ildp: `Approve ${BRAND.planShort}`,
   advance_year: "Advance cycle year",
   view_team: "View team",
   view_org: "View organization",

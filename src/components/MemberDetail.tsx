@@ -9,6 +9,7 @@ import { Button, Card } from "./ui";
 import type { Profile, Role } from "@/lib/types";
 import EmployeeDashboard from "./employee/EmployeeDashboard";
 import TnaReview from "./TnaReview";
+import { BRAND } from "@/lib/brand";
 
 // A team member's detail with the management actions available to the caller. Authorization +
 // separation of duties are enforced server-side (RLS + the validate route); these buttons just
@@ -55,7 +56,7 @@ export default function MemberDetail({
   const notSelf = member.id !== selfId;
 
   async function onTnaValidated() {
-    setMsg("TNA validated — plan generated.");
+    setMsg(`${BRAND.assessment} validated — plan generated.`);
     setError(null);
     await load();
     setRefreshKey((k) => k + 1);
@@ -88,13 +89,13 @@ export default function MemberDetail({
         </div>
         <div className="flex flex-wrap gap-2">
           {notSelf && ildp?.status === "pending_endorsement" && can(role, "endorse_ildp") && (
-            <Button onClick={() => run(endorse, "ILDP endorsed.")} disabled={busy}>Endorse ILDP</Button>
+            <Button onClick={() => run(endorse, `${BRAND.plan} endorsed.`)} disabled={busy}>Endorse {BRAND.planShort}</Button>
           )}
           {notSelf && ildp?.status === "pending_approval" && can(role, "approve_ildp") && (
-            <Button onClick={() => run(approve, "ILDP approved — active.")} disabled={busy}>Approve ILDP</Button>
+            <Button onClick={() => run(approve, `${BRAND.plan} approved — active.`)} disabled={busy}>Approve {BRAND.planShort}</Button>
           )}
           {board?.cycle && can(role, "advance_year") && (
-            <Button variant="secondary" onClick={() => run(advanceYear, "Advanced to next year — new TNA opened.")} disabled={busy}>Advance year</Button>
+            <Button variant="secondary" onClick={() => run(advanceYear, `Advanced to next year — new ${BRAND.assessment} opened.`)} disabled={busy}>Advance year</Button>
           )}
         </div>
       </div>
@@ -103,7 +104,7 @@ export default function MemberDetail({
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
       <Card className="px-4 py-2.5 text-xs text-muted">
-        Cycle: {board?.cycle ? `Year ${board.cycle.current_year}, ${board.cycle.status}` : "none"} · TNA: {latestTna?.status ?? "none"} · ILDP: {ildp?.status ?? "none"}
+        Cycle: {board?.cycle ? `Year ${board.cycle.current_year}, ${board.cycle.status}` : "none"} · {BRAND.assessmentShort}: {latestTna?.status ?? "none"} · {BRAND.planShort}: {ildp?.status ?? "none"}
       </Card>
 
       {notSelf && latestTna?.status === "submitted" && can(role, "validate_tna") && (

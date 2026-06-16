@@ -18,7 +18,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const db = getSupabaseAdmin();
 
   const { data: tna } = await db.from("tna_assessment").select("id, status, cycle_year, dev_cycle_id").eq("id", tnaId).maybeSingle();
-  if (!tna) return NextResponse.json({ error: "TNA not found" }, { status: 404 });
+  if (!tna) return NextResponse.json({ error: "Assessment not found" }, { status: 404 });
 
   const { data: cycle } = await db.from("dev_cycle").select("id, user_id, snapshot_of_targets").eq("id", tna.dev_cycle_id).single();
   const ownerId = cycle!.user_id as string;
@@ -29,10 +29,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const isAdmin = role === "hr_admin" || role === "super_admin";
   const isManager = ownerProfile?.manager_id === caller.id;
   if (!(await hasCapability(db, role, "validate_tna")) || !(isAdmin || isManager)) {
-    return NextResponse.json({ error: "Not authorized to review this TNA" }, { status: 403 });
+    return NextResponse.json({ error: "Not authorized to review this assessment" }, { status: 403 });
   }
   if (ownerId === caller.id) {
-    return NextResponse.json({ error: "You cannot review your own TNA (separation of duties)" }, { status: 403 });
+    return NextResponse.json({ error: "You cannot review your own assessment (separation of duties)" }, { status: 403 });
   }
 
   const snapshot = (cycle!.snapshot_of_targets as Target[]) ?? [];
