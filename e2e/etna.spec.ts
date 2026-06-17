@@ -354,3 +354,23 @@ test("full lifecycle: HR creates an employee → they assess → supervisor vali
   await page.getByRole("button", { name: "My Development" }).click();
   await expect(page.getByText("Cybersecurity").first()).toBeVisible(); // a generated gap
 });
+
+// Regression: the notification panel was `absolute right-0` and got clipped off-screen
+// (the bell sits in the narrow left sidebar / right header). It must open fully on-screen.
+test("notification panel opens fully within the viewport (desktop + mobile)", async ({ page }) => {
+  await signIn(page, CREDS.employee);
+  for (const vp of [{ width: 1280, height: 800 }, { width: 390, height: 780 }]) {
+    await page.setViewportSize(vp);
+    await page.getByRole("button", { name: /Notifications/ }).click();
+    const panel = page.getByRole("dialog", { name: "Notifications" });
+    await expect(panel).toBeVisible();
+    const box = await panel.boundingBox();
+    if (!box) throw new Error("notification panel has no bounding box");
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(vp.width + 1); // +1 for sub-pixel rounding
+    expect(box.y + box.height).toBeLessThanOrEqual(vp.height + 1);
+    await page.keyboard.press("Escape");
+    await expect(panel).toBeHidden();
+  }
+});

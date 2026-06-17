@@ -66,7 +66,7 @@ export default function NotificationBell({ onNavigate }: { onNavigate: (key: str
         <div
           role="dialog"
           aria-label="Notifications"
-          className="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_24px_60px_-20px_rgba(28,27,23,0.35)]"
+          className="fixed right-3 top-16 z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_24px_60px_-20px_rgba(28,27,23,0.35)] lg:right-auto lg:left-[16.5rem] lg:top-16"
         >
           <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
             <span className="text-sm font-semibold text-ink">Notifications</span>
@@ -79,7 +79,7 @@ export default function NotificationBell({ onNavigate }: { onNavigate: (key: str
           {items.length === 0 ? (
             <p className="px-4 py-8 text-center text-sm text-muted">You&rsquo;re all caught up.</p>
           ) : (
-            <ul className="max-h-96 divide-y divide-line overflow-y-auto">
+            <ul className="max-h-[min(24rem,70dvh)] divide-y divide-line overflow-y-auto">
               {items.map((n) => (
                 <li key={n.id}>
                   <button
