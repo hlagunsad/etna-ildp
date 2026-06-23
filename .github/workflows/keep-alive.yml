@@ -1,0 +1,33 @@
+name: Keep Supabase alive
+
+# Supabase free-tier projects pause after 7 days of no activity. This workflow makes a
+# trivial database read on a schedule so the inactivity timer never reaches 7 days.
+#
+# Required repo secrets (Settings -> Secrets and variables -> Actions):
+#   SUPABASE_URL       = NEXT_PUBLIC_SUPABASE_URL             (e.g. https://<ref>.supabase.co)
+#   SUPABASE_ANON_KEY  = NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (the sb_publishable_... key)
+# The publishable key is browser-public, so nothing sensitive is exposed here.
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # daily 06:00 UTC - well inside the 7-day window, survives the odd skipped run
+  workflow_dispatch:       # allow manual runs from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the database (a trivial SELECT keeps the project active)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Missing SUPABASE_URL / SUPABASE_ANON_KEY repo secrets - add them under Settings -> Secrets and variables -> Actions." >&2
+            exit 1
+          fi
+          base="${SUPABASE_URL%/}"
+          curl -fsS "$base/rest/v1/competency?select=code&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -o /dev/null -w "Supabase responded: HTTP %{http_code}\n"
