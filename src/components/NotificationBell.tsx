@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNotifications, type Notif } from "./NotificationsProvider";
 
 function timeAgo(iso: string): string {
@@ -16,13 +17,17 @@ function timeAgo(iso: string): string {
 export default function NotificationBell({ onNavigate }: { onNavigate: (key: string) => void }) {
   const { items, unread, reload, markRead, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     reload(); // refresh when the panel opens (no realtime — a documented follow-up)
     const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      // The panel is portaled out of this subtree, so check it explicitly too.
+      if (btnRef.current?.contains(t) || panelRef.current?.contains(t)) return;
+      setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
@@ -42,7 +47,7 @@ export default function NotificationBell({ onNavigate }: { onNavigate: (key: str
   }
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={btnRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -62,8 +67,9 @@ export default function NotificationBell({ onNavigate }: { onNavigate: (key: str
         )}
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
+          ref={panelRef}
           role="dialog"
           aria-label="Notifications"
           className="fixed right-3 top-16 z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_24px_60px_-20px_rgba(28,27,23,0.35)] lg:right-auto lg:left-[16.5rem] lg:top-16"
@@ -98,7 +104,8 @@ export default function NotificationBell({ onNavigate }: { onNavigate: (key: str
               ))}
             </ul>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

@@ -370,6 +370,13 @@ test("notification panel opens fully within the viewport (desktop + mobile)", as
     expect(box.y).toBeGreaterThanOrEqual(0);
     expect(box.x + box.width).toBeLessThanOrEqual(vp.width + 1); // +1 for sub-pixel rounding
     expect(box.y + box.height).toBeLessThanOrEqual(vp.height + 1);
+    // …and it must render on top, not behind page content (z-index / stacking context).
+    const onTop = await panel.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + 16);
+      return !!hit && el.contains(hit);
+    });
+    expect(onTop).toBe(true);
     await page.keyboard.press("Escape");
     await expect(panel).toBeHidden();
   }
